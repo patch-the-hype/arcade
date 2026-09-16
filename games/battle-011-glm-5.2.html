@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON RUNNER</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060f;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  canvas{box-shadow:0 0 40px #0ff3}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="300"></canvas>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, GROUND = H - 40;
+const neon = (c, blur=15) => { ctx.strokeStyle = c; ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = blur; };
+
+let player, obstacles, speed, score, best, hiScore, spawnTimer, state, t;
+best = +localStorage.getItem('neonRunnerBest') || 0;
+
+function reset() {
+  player = { x: 70, y: GROUND, vy: 0, w: 26, h: 46, duck: false, jumps: 0 };
+  obstacles = []; speed = 5; score = 0; spawnTimer = 50; state = 'run'; t = 0;
+}
+reset();
+
+function jump() {
+  if (state === 'over') { reset(); return; }
+  if (player.jumps < 2) { player.vy = -13; player.jumps++; }
+}
+
+addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); jump(); }
+  if (e.code === 'ArrowDown') { e.preventDefault(); if (state === 'run') player.duck = true; }
+});
+addEventListener('keyup', e => { if (e.code === 'ArrowDown') player.duck = false; });
+
+function spawn() {
+  if (Math.random() < 0.3) {
+    obstacles.push({ x: W + 20, y: GROUND - 75, w: 40, h: 22, fly: true }); // must duck
+  } else {
+    const h = 25 + Math.random() * 35;
+    obstacles.push({ x: W + 20, y: GROUND - h, w: 18 + Math.random() * 22, h, fly: false });
+  }
+}
+
+function rectHit(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function update() {
+  t++;
+  if (state !== 'run') return;
+  speed = 5 + t / 600;
+  score += speed * 0.1;
+  if (score > best) { best = score; localStorage.setItem('neonRunnerBest', Math.floor(best)); }
+
+  player.vy += 0.65;
+  player.y += player.vy;
+  if (player.y >= GROUND) { player.y = GROUND; player.vy = 0; player.jumps = 0; }
+  player.h = player.duck && player.y >= GROUND ? 24 : 46;
+
+  if (--spawnTimer <= 0) { spawn(); spawnTimer = 45 + Math.random() * 60 - Math.min(25, speed); }
+
+  for (const o of obstacles) o.x -= speed;
+  obstacles = obstacles.filter(o => o.x + o.w > -30);
+
+  const box = { x: player.x, y: player.y - player.h, w: player.w, h: player.h };
+  for (const o of obstacles) {
+    const ob = { x: o.x, y: o.y, w: o.w, h: o.h };
+    if (rectHit(box, ob)) { state = 'over'; hiScore = Math.floor(score); return; }
+  }
+}
+
+function drawPlayer() {
+  const top = player.y - player.h;
+  neon('#0ff');
+  ctx.lineWidth = 2;
+  ctx.strokeRect(player.x, top, player.w, player.h);
+  ctx.fillRect(player.x + player.w - 9, top + (player.duck ? 6 : 8), 6, 6); // eye
+  ctx.shadowBlur = 0;
+}
+
+function drawObstacle(o) {
+  neon(o.fly ? '#f0f' : '#0f0');
+  ctx.lineWidth = 2;
+  ctx.strokeRect(o.x, o.y, o.w, o.h);
+  if (o.fly) { // wing marks
+    ctx.beginPath();
+    ctx.moveTo(o.x + 8, o.y); ctx.lineTo(o.x + 14, o.y - 8); ctx.lineTo(o.x + 20, o.y);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+}
+
+function draw() {
+  ctx.fillStyle = '#05060f';
+  ctx.fillRect(0, 0, W, H);
+
+  // ground grid
+  neon('#0ff', 8);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, GROUND + 2); ctx.lineTo(W, GROUND + 2); ctx.stroke();
+  const off = (t * speed) % 40;
+  for (let x = -off; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, GROUND + 4); ctx.lineTo(x - 20, H); ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // stars
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 30; i++) {
+    const sx = (i * 137 + t * 0.5) % W, sy = (i * 61) % (GROUND - 60);
+    ctx.globalAlpha = 0.3 + 0.7 * ((i * 7 + t) % 10) / 10;
+    ctx.fillRect(W - sx, sy, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+
+  drawPlayer();
+  obstacles.forEach(drawObstacle);
+
+  // score
+  ctx.font = '16px monospace';
+  neon('#0ff', 10);
+  ctx.fillText('HI ' + String(Math.floor(best)).padStart(5, '0') + '  ' + String(Math.floor(score)).padStart(5, '0'), W - 220, 28);
+  ctx.shadowBlur = 0;
+
+  if (state === 'over') {
+    ctx.font = '32px monospace';
+    neon('#f0f', 25);
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', W / 2, H / 2 - 20);
+    ctx.font = '16px monospace';
+    neon('#0ff', 10);
+    ctx.fillText('SCORE ' + hiScore + ' — PRESS SPACE TO RESTART', W / 2, H / 2 + 15);
+    ctx.textAlign = 'left';
+    ctx.shadowBlur = 0;
+  }
+}
+
+let last = 0;
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (ts - last < 1000 / 60) return; // 60fps cap
+  last = ts;
+  update();
+  draw();
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

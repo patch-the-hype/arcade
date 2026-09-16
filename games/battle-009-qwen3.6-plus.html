@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Flap</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden}
+canvas{border:2px solid #0ff;box-shadow:0 0 20px #0ff,0 0 40px #0ff4}
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="600"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),W=400,H=600;
+const GRAVITY=0.45,FLAP=-7.5,PIPE_W=55,GAP=155,SPEED=2.8,GROUND=50;
+let bird,pipes,score,best=0,state,frame;
+function init(){bird={x:80,y:H/2,v:0,r:14};pipes=[];score=0;frame=0;state='ready'}
+init();
+function spawn(){const top=60+Math.random()*(H-GAP-GROUND-120);pipes.push({x:W,top,bot:top+GAP,scored:false})}
+function flap(){if(state==='ready'){state='play';bird.v=FLAP}
+else if(state==='play')bird.v=FLAP;
+else if(state==='dead')init()}
+document.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();flap()}});
+c.addEventListener('click',flap);
+function hit(){if(bird.y+bird.r>H-GROUND||bird.y-bird.r<0)return true;
+for(const p of pipes)if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+PIPE_W&&(bird.y-bird.r<p.top||bird.y+bird.r>p.bot))return true;
+return false}
+function update(){if(state!=='play')return;frame++;
+bird.v+=GRAVITY;bird.y+=bird.v;
+if(frame%90===0)spawn();
+for(const p of pipes){p.x-=SPEED;if(!p.scored&&p.x+PIPE_W<bird.x){p.scored=true;score++}}
+pipes=pipes.filter(p=>p.x>-PIPE_W);
+if(hit()){state='dead';if(score>best)best=score}}
+function draw(){x.fillStyle='#0a0a0a';x.fillRect(0,0,W,H);
+x.strokeStyle='#0ff3';x.lineWidth=1;
+for(let i=0;i<W;i+=40){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}
+for(let i=0;i<H;i+=40){x.beginPath();x.moveTo(0,i);x.lineTo(W,i);x.stroke()}
+x.fillStyle='#0a0';x.fillRect(0,H-GROUND,W,GROUND);
+x.strokeStyle='#0f0';x.shadowBlur=10;x.shadowColor='#0f0';
+x.beginPath();x.moveTo(0,H-GROUND);x.lineTo(W,H-GROUND);x.stroke();x.shadowBlur=0;
+if(state==='play'||state==='dead'){
+x.shadowBlur=15;x.shadowColor='#f0f';x.fillStyle='#f0f';
+for(const p of pipes){x.fillRect(p.x,0,PIPE_W,p.top);x.fillRect(p.x,p.bot,PIPE_W,H-p.bot-GROUND);
+x.strokeStyle='#f0f';x.strokeRect(p.x,0,PIPE_W,p.top);x.strokeRect(p.x,p.bot,PIPE_W,H-p.bot-GROUND)}
+x.shadowBlur=0}
+x.shadowBlur=20;x.shadowColor='#ff0';x.fillStyle='#ff0';
+x.beginPath();x.arc(bird.x,bird.y,bird.r,0,Math.PI*2);x.fill();
+x.shadowBlur=10;x.fillStyle='#000';
+x.beginPath();x.arc(bird.x+5,bird.y-3,3,0,Math.PI*2);x.fill();
+x.shadowBlur=0;
+x.fillStyle='#0ff';x.font='bold 28px monospace';x.textAlign='center';
+x.shadowBlur=10;x.shadowColor='#0ff';x.fillText(score,W/2,40);x.shadowBlur=0;
+x.fillStyle='#ff0';x.font='14px monospace';x.fillText(`BEST ${best}`,W/2,62);
+if(state==='ready'){x.fillStyle='#0ff';x.font='bold 22px monospace';x.textAlign='center';
+x.shadowBlur=15;x.shadowColor='#0ff';x.fillText('PRESS SPACE',W/2,H/2+60);
+x.fillText('OR CLICK TO FLAP',W/2,H/2+85);x.shadowBlur=0}
+if(state==='dead'){x.fillStyle='#f00';x.font='bold 36px monospace';x.textAlign='center';
+x.shadowBlur=20;x.shadowColor='#f00';x.fillText('GAME OVER',W/2,H/2-20);x.shadowBlur=0;
+x.fillStyle='#fff';x.font='18px monospace';x.fillText(`SCORE: ${score}`,W/2,H/2+20);
+x.fillText('PRESS SPACE TO RESTART',W/2,H/2+55)}}
+function loop(){update();draw();requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>

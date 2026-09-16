@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whack-a-Mole — Neon Edition</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Courier New',monospace;color:#0ff;overflow:hidden}
+canvas{cursor:crosshair;border:2px solid #0ff;border-radius:4px;box-shadow:0 0 30px #0ff,0 0 60px #0ff33}
+</style>
+</head>
+<body>
+<canvas id="gc" width="480" height="640"></canvas>
+<script>
+const C=document.getElementById('gc'),X=C.getContext('2d');
+const W=480,H=640,COLS=3,ROWS=3,CX=W/COLS,CY=(H-160)/ROWS,BY=100;
+let state='menu',score=0,combo=0,maxCombo=0,timeLeft=60,moleTimer=0,moleInterval=1800;
+let holes=[],lastFrame=0,particles=[];
+
+const KEYS={'1':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6,'8':7,'9':8,
+'q':0,'w':1,'e':2,'a':3,'s':4,'d':5,'z':6,'x':7,'c':8};
+
+for(let i=0;i<9;i++)holes.push({row:Math.floor(i/3),col:i%3,active:false,anim:0,hit:false,hitTime:0});
+
+function popMole(){
+  const inactive=holes.filter(h=>!h.active);
+  if(!inactive.length)return;
+  const h=inactive[Math.floor(Math.random()*inactive.length)];
+  h.active=true;h.anim=0;h.hit=false;h.hitTime=0;
+}
+
+function whack(i){
+  const h=holes[i];
+  if(!h.active||h.hit)return;
+  h.hit=true;h.hitTime=0;
+  combo++;if(combo>maxCombo)maxCombo=combo;
+  const pts=combo>=5?30:combo>=3?20:10;
+  score+=pts;
+  const px=h.col*CX+CX/2,py=BY+h.row*CY+CY/2;
+  for(let j=0;j<12;j++)particles.push({x:px,y:py,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*8-3,life:1,color:combo>=3?'#f0f':'#0f0',size:Math.random()*4+2});
+}
+
+function spawnParticles(px,py,color,count){
+  for(let j=0;j<count;j++)particles.push({x:px,y:py,vx:(Math.random()-.5)*6,vy:-Math.random()*4-2,life:1,color,size:Math.random()*3+1});
+}
+
+function reset(){score=0;combo=0;maxCombo=0;timeLeft=60;moleTimer=0;moleInterval=1800;holes.forEach(h=>{h.active=false;h.hit=false});particles=[];}
+
+function drawHole(cx,cy,w){
+  X.fillStyle='#1a0a2e';X.fillRect(cx-w/2,cy-15,w,30);
+  const g=X.createRadialGradient(cx,cy-10,0,cx,cy-10,w/2);
+  g.addColorStop(0,'#0a0a1a');g.addColorStop(1,'#1a0a2e');
+  X.fillStyle=g;X.beginPath();X.ellipse(cx,cy-10,w/2,18,0,0,Math.PI*2);X.fill();
+}
+
+function drawMole(cx,cy,t,h){
+  if(h.hit){
+    if(h.hitTime<400){
+      const s=1+h.hitTime/400*.5;
+      X.save();X.translate(cx,cy-25);X.scale(s,s);X.globalAlpha=1-h.hitTime/400;
+      X.fillStyle='#f44';X.beginPath();X.arc(0,-5,12,0,Math.PI*2);X.fill();
+      X.fillStyle='#fff';X.font='bold 16px monospace';X.textAlign='center';X.fillText('X',0,0);
+      X.restore();
+    }
+    return;
+  }
+  const pop=Math.min(h.anim/300,1);
+  const bobY=Math.sin(t/200)*3;
+  const ry=pop*20;
+  X.save();X.translate(cx,cy-10+bobY-ry);
+  // Body
+  X.fillStyle='#8B4513';X.beginPath();X.ellipse(0,0,16,14,0,0,Math.PI*2);X.fill();
+  // Eyes
+  X.fillStyle='#fff';X.beginPath();X.arc(-6,-6,5,0,Math.PI*2);X.arc(6,-6,5,0,Math.PI*2);X.fill();
+  X.fillStyle='#111';X.beginPath();X.arc(-5,-6,2.5,0,Math.PI*2);X.arc(7,-6,2.5,0,Math.PI*2);X.fill();
+  // Nose
+  X.fillStyle='#D2691E';X.beginPath();X.ellipse(0,-1,4,3,0,0,Math.PI*2);X.fill();
+  // Cheeks glow
+  X.globalAlpha=.4+Math.sin(t/150)*.2;X.fillStyle='#f0a';
+  X.beginPath();X.arc(-12,0,4,0,Math.PI*2);X.arc(12,0,4,0,Math.PI*2);X.fill();
+  X.restore();
+}
+
+function draw(){
+  X.fillStyle='#0a0a0f';X.fillRect(0,0,W,H);
+  // Title
+  X.font='bold 28px monospace';X.textAlign='center';X.fillStyle='#f0f';
+  X.shadowColor='#f0f';X.shadowBlur=15;
+  X.fillText('WHACK-A-MOLE',W/2,45);X.shadowBlur=0;
+  // HUD
+  X.font='bold 18px monospace';X.fillStyle='#0f0';
+  X.shadowColor='#0f0';X.shadowBlur=8;
+  X.textAlign='left';X.fillText(`SCORE: ${score}`,15,75);
+  X.textAlign='right';X.fillText(`TIME: ${timeLeft}s`,W-15,75);
+  X.textAlign='center';
+  if(combo>=3){X.fillStyle='#ff0';X.shadowColor='#ff0';X.fillText(`COMBO x${combo}`,W/2,75);}
+  X.shadowBlur=0;
+  // Grid
+  const now=performance.now();
+  for(let i=0;i<9;i++){
+    const h=holes[i];
+    const cx=h.col*CX+CX/2,cy=BY+h.row*CY+CY/2;
+    drawHole(cx,cy,CX-30);
+    if(h.active){
+      h.anim+=16;
+      drawMole(cx,cy,now,h);
+      if(h.anim>moleInterval){h.active=false;combo=0;}
+    }
+    // Key hint
+    const keys=Object.keys(KEYS);
+    const ki=keys.findIndex(k=>KEYS[k]===i);
+    if(ki>=0&&ki<keys.length){
+      const mapped=[['7','Q'],['8','W'],['9','E'],['4','A'],['5','S'],['6','D'],['1','Z'],['2','X'],['3','C']];
+      X.fillStyle='#555';X.font='11px monospace';X.fillText(mapped[i].join('/'),cx,cy+28);
+    }
+  }
+  // Particles
+  particles=particles.filter(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=.025;
+    if(p.life<=0)return false;
+    X.globalAlpha=p.life;X.fillStyle=p.color;
+    X.beginPath();X.arc(p.x,p.y,p.size,0,Math.PI*2);X.fill();
+    return true;
+  });
+  X.globalAlpha=1;
+  // Timer bar
+  X.fillStyle='#222';X.fillRect(0,H-50,W,50);
+  const barW=(timeLeft/60)*W;
+  const barG=X.createLinearGradient(0,0,barW,0);
+  barG.addColorStop(0,'#0f0');barG.addColorStop(.5,'#ff0');barG.addColorStop(1,'#f00');
+  X.fillStyle=barG;X.fillRect(0,H-50,barW,50);
+  X.fillStyle='#fff';X.font='bold 16px monospace';X.textAlign='center';
+  X.fillText('TIME LEFT',W/2,H-20);
+}
+
+function drawMenu(){
+  X.fillStyle='#0a0a0f';X.fillRect(0,0,W,H);
+  X.font='bold 32px monospace';X.textAlign='center';X.fillStyle='#f0f';
+  X.shadowColor='#f0f';X.shadowBlur=20;
+  X.fillText('WHACK-A-MOLE',W/2,120);X.shadowBlur=0;
+  X.font='16px monospace';X.fillStyle='#0ff';
+  X.fillText('WHACK 9 MOLES IN 60 SECONDS',W/2,180);
+  X.fillText('BIGGER COMBO = MORE POINTS',W/2,210);
+  X.fillStyle='#0f0';X.font='14px monospace';
+  X.fillText('KEYBOARD: QWE/ASD/ZXC or Numpad 789/456/123',W/2,280);
+  X.fillText('MOUSE: Click the moles!',W/2,310);
+  X.fillStyle='#ff0';X.font='bold 20px monospace';
+  X.shadowColor='#ff0';X.shadowBlur=10;
+  const pulse=.7+Math.sin(performance.now()/300)*.3;X.globalAlpha=pulse;
+  X.fillText('CLICK or PRESS ENTER TO START',W/2,400);
+  X.globalAlpha=1;X.shadowBlur=0;
+  // Animated moles
+  const t=performance.now()/1000;
+  for(let i=0;i<3;i++){
+    const mx=120+i*120,my=480+Math.sin(t*2+i)*8;
+    X.fillStyle='#8B4513';X.beginPath();X.ellipse(mx,my,14,12,0,0,Math.PI*2);X.fill();
+    X.fillStyle='#fff';X.beginPath();X.arc(mx-5,my-4,4,0,Math.PI*2);X.arc(mx+5,my-4,4,0,Math.PI*2);X.fill();
+    X.fillStyle='#111';X.beginPath();X.arc(mx-4,my-4,2,0,Math.PI*2);X.arc(mx+6,my-4,2,0,Math.PI*2);X.fill();
+  }
+}
+
+function drawGameOver(){
+  X.fillStyle='rgba(10,10,15,.85)';X.fillRect(0,0,W,H);
+  X.font='bold 36px monospace';X.textAlign='center';X.fillStyle='#f44';
+  X.shadowColor='#f44';X.shadowBlur=20;
+  X.fillText('GAME OVER',W/2,180);X.shadowBlur=0;
+  X.font='22px monospace';X.fillStyle='#0ff';
+  X.fillText(`FINAL SCORE: ${score}`,W/2,240);
+  X.fillText(`BEST COMBO: x${maxCombo}`,W/2,280);
+  const grade=score>=500?'S':score>=300?'A':score>=200?'B':score>=100?'C':'D';
+  X.font='bold 48px monospace';X.fillStyle='#ff0';X.shadowColor='#ff0';X.shadowBlur=15;
+  X.fillText(grade,W/2,360);X.shadowBlur=0;
+  X.font='16px monospace';X.fillStyle='#0f0';
+  const pulse=.7+Math.sin(performance.now()/300)*.3;X.globalAlpha=pulse;
+  X.fillText('CLICK or PRESS ENTER TO RESTART',W/2,430);X.globalAlpha=1;
+}
+
+function loop(ts){
+  const dt=ts-lastFrame;lastFrame=ts;
+  if(state==='playing'){
+    moleTimer+=dt;
+    if(moleTimer>=moleInterval){
+      moleTimer=0;popMole();
+      moleInterval=Math.max(400,moleInterval-30);
+    }
+    timeLeft-=dt/1000;
+    if(timeLeft<=0){timeLeft=0;state='gameover';}
+    draw();
+  }else if(state==='menu') drawMenu();
+  else if(state==='gameover') drawGameOver();
+  requestAnimationFrame(loop);
+}
+
+function handleClick(mx,my){
+  if(state!=='playing')return;
+  for(let i=0;i<9;i++){
+    const h=holes[i];
+    const hx=h.col*CX+CX/2,hy=BY+h.row*CY+CY/2;
+    if(Math.abs(mx-hx)<CX/2-5&&Math.abs(my-hy)<CY/2-5)whack(i);
+  }
+}
+
+C.addEventListener('click',e=>{
+  const r=C.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+  if(state==='menu'||state==='gameover'){state='playing';reset();return;}
+  handleClick(mx,my);
+});
+
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if((state==='menu'||state==='gameover')&&(k==='enter'||k===' ')){state='playing';reset();return;}
+  if(state==='playing'&&k in KEYS)whack(KEYS[k]);
+});
+
+// Prevent scrolling on numpad
+document.addEventListener('keydown',e=>{if(['1','2','3','4','5','6','7','8','9'].includes(e.key))e.preventDefault();});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

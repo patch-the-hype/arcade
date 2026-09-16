@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEON FLAPPY</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0a14;display:flex;align-items:center;justify-content:center;
+    font-family:"Courier New",monospace;overflow:hidden}
+  canvas{background:#0a0a14;border:2px solid #1affc6;box-shadow:0 0 24px #1affc6,0 0 48px #ff2bd6 inset;
+    image-rendering:pixelated}
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="600"></canvas>
+<script>
+const cv = document.getElementById("c"), x = cv.getContext("2d");
+const W = cv.width, H = cv.height;
+const GRAV = 0.45, FLAP = -7.6, PIPE_W = 60, GAP = 150, SPEED = 2.4, SPACING = 220;
+
+let bird, pipes, score, best = 0, state, frame;
+state = "ready"; // ready | play | over
+
+function reset(){
+  bird = {y: H/2, v: 0, r: 12};
+  pipes = [];
+  score = 0;
+  frame = 0;
+  for(let i = 0; i < 4; i++) addPipe(W + 80 + i*SPACING);
+}
+function addPipe(px){
+  const margin = 60;
+  const gy = margin + Math.random()*(H - GAP - margin*2);
+  pipes.push({x: px, gapY: gy, scored: false});
+}
+function flap(){
+  if(state === "ready"){ state = "play"; bird.v = FLAP; }
+  else if(state === "play"){ bird.v = FLAP; }
+  else if(state === "over"){ reset(); state = "play"; }
+}
+
+function update(){
+  frame++;
+  if(state !== "play") return;
+  bird.v += GRAV;
+  bird.y += bird.v;
+  if(bird.y + bird.r > H){ bird.y = H - bird.r; die(); }
+  if(bird.y - bird.r < 0){ bird.y = bird.r; bird.v = 0; }
+  for(const p of pipes){
+    p.x -= SPEED;
+    if(!p.scored && p.x + PIPE_W < W/2 - bird.r){ p.scored = true; score++; }
+    if(p.x + PIPE_W < -10) { p.x = pipes[pipes.length-1].x + SPACING; p.gapY = 60 + Math.random()*(H-GAP-120); p.scored = false; }
+    // collision
+    if(W/2 + bird.r > p.x && W/2 - bird.r < p.x + PIPE_W){
+      if(bird.y - bird.r < p.gapY || bird.y + bird.r > p.gapY + GAP) die();
+    }
+  }
+}
+function die(){ if(state === "play"){ state = "over"; best = Math.max(best, score); } }
+
+function draw(){
+  x.clearRect(0,0,W,H);
+  // grid bg
+  x.strokeStyle = "rgba(26,255,198,0.08)";
+  x.lineWidth = 1;
+  for(let gx=0; gx<W; gx+=40){ x.beginPath(); x.moveTo(gx,0); x.lineTo(gx,H); x.stroke(); }
+  for(let gy=0; gy<H; gy+=40){ x.beginPath(); x.moveTo(0,gy); x.lineTo(W,gy); x.stroke(); }
+  // pipes
+  for(const p of pipes){
+    x.fillStyle = "#1affc6";
+    x.shadowColor = "#1affc6"; x.shadowBlur = 12;
+    x.fillRect(p.x, 0, PIPE_W, p.gapY);
+    x.fillRect(p.x, p.gapY+GAP, PIPE_W, H-(p.gapY+GAP));
+    x.shadowBlur = 0;
+    x.fillStyle = "#0a0a14";
+    x.fillRect(p.x-3, p.gapY-6, PIPE_W+6, 6);
+    x.fillRect(p.x-3, p.gapY+GAP, PIPE_W+6, 6);
+  }
+  // bird
+  x.save();
+  x.translate(W/2, bird.y);
+  const tilt = Math.max(-0.5, Math.min(1.2, bird.v/10));
+  x.rotate(tilt);
+  x.fillStyle = "#ff2bd6";
+  x.shadowColor = "#ff2bd6"; x.shadowBlur = 16;
+  x.beginPath(); x.arc(0,0,bird.r,0,Math.PI*2); x.fill();
+  x.shadowBlur = 0;
+  x.fillStyle = "#0a0a14";
+  x.beginPath(); x.arc(4,-3,3,0,Math.PI*2); x.fill();
+  x.restore();
+  // score
+  x.fillStyle = "#1affc6";
+  x.shadowColor = "#1affc6"; x.shadowBlur = 10;
+  x.font = "bold 40px Courier New"; x.textAlign = "center";
+  x.fillText(score, W/2, 70);
+  x.shadowBlur = 0;
+  // overlays
+  if(state === "ready"){
+    x.fillStyle = "#ff2bd6"; x.font = "bold 28px Courier New";
+    x.fillText("NEON FLAPPY", W/2, H/2-40);
+    x.fillStyle = "#1affc6"; x.font = "16px Courier New";
+    x.fillText("SPACE / UP to flap", W/2, H/2+10);
+  }
+  if(state === "over"){
+    x.fillStyle = "rgba(10,10,20,0.7)"; x.fillRect(0,0,W,H);
+    x.fillStyle = "#ff2bd6"; x.font = "bold 34px Courier New";
+    x.fillText("GAME OVER", W/2, H/2-50);
+    x.fillStyle = "#1affc6"; x.font = "20px Courier New";
+    x.fillText("SCORE " + score, W/2, H/2-10);
+    x.fillText("BEST " + best, W/2, H/2+20);
+    x.fillStyle = "#fff"; x.font = "14px Courier New";
+    x.fillText("press any key to restart", W/2, H/2+60);
+  }
+}
+
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+
+addEventListener("keydown", e => {
+  if(e.code === "Space" || e.code === "ArrowUp" || e.key === " " || e.key === "ArrowUp"){
+    e.preventDefault(); flap();
+  }
+});
+cv.addEventListener("mousedown", flap);
+cv.addEventListener("touchstart", e => { e.preventDefault(); flap(); });
+
+reset();
+loop();
+</script>
+</body>
+</html>

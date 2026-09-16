@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TETRIS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Courier New',monospace}
+#wrap{display:flex;gap:20px;align-items:flex-start}
+canvas{border:2px solid #0ff;box-shadow:0 0 20px #0ff,0 0 40px #0ff4}
+#side{display:flex;flex-direction:column;gap:15px}
+.box{background:#111;border:2px solid #f0f;padding:12px;box-shadow:0 0 15px #f0f6;min-width:120px}
+.box h3{color:#0ff;font-size:12px;margin-bottom:8px;text-shadow:0 0 8px #0ff}
+.box div{color:#fff;font-size:18px;text-shadow:0 0 10px #fff}
+#next-canvas{border:none;box-shadow:none}
+#over{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#f0f;font-size:32px;text-shadow:0 0 20px #f0f;display:none;text-align:center}
+#over span{display:block;font-size:14px;color:#0ff;margin-top:15px;text-shadow:0 0 8px #0ff}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="board" width="300" height="600"></canvas>
+  <div id="side">
+    <div class="box"><h3>NEXT</h3><canvas id="next-canvas" width="100" height="100"></canvas></div>
+    <div class="box"><h3>SCORE</h3><div id="score">0</div></div>
+    <div class="box"><h3>LEVEL</h3><div id="level">1</div></div>
+    <div class="box"><h3>LINES</h3><div id="lines">0</div></div>
+  </div>
+</div>
+<div id="over">GAME OVER<span>Press R to restart</span></div>
+<script>
+const COLS=10,ROWS=20,SIZE=30;
+const canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
+const ncanvas=document.getElementById('next-canvas'),nctx=ncanvas.getContext('2d');
+const PIECES=[
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  [[1,1,0],[0,1,1]],
+  [[0,1,1],[1,1,0]]
+];
+const COLORS=['#0ff','#ff0','#a0f','#f80','#00f','#f00','#0f0'];
+let board,current,nextPiece,score,level,lines,dropInterval,dropCounter,gameOver,lastTime;
+function newPiece(){const i=Math.random()*PIECES.length|0;return{shape:PIECES[i].map(r=>[...r]),color:COLORS[i],x:3,y:0}}
+function collide(b,p,dx=0,dy=0){
+  for(let r=0;r<p.shape.length;r++)for(let c=0;c<p.shape[r].length;c++){
+    if(!p.shape[r][c])continue;
+    const nx=p.x+c+dx,ny=p.y+r+dy;
+    if(nx<0||nx>=COLS||ny>=ROWS||b[ny]&&b[ny][nx])return true;
+  }
+  return false;
+}
+function merge(b,p){p.shape.forEach((r,y)=>r.forEach((v,x)=>{if(v)b[p.y+y][p.x+x]=p.color}))}
+function clearLines(){
+  let cleared=0;
+  for(let r=ROWS-1;r>=0;r--){
+    if(board[r].every(c=>c)){board.splice(r,1);board.unshift(Array(COLS).fill(null));cleared++;r++;}
+  }
+  if(cleared){lines+=cleared;score+=[0,100,300,500,800][cleared]*level;level=Math.floor(lines/10)+1;dropInterval=Math.max(50,1000-(level-1)*80);updateUI()}
+}
+function updateUI(){document.getElementById('score').textContent=score;document.getElementById('level').textContent=level;document.getElementById('lines').textContent=lines}
+function drawBoard(){
+  ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    ctx.strokeStyle='#1a1a3a';ctx.strokeRect(c*SIZE,r*SIZE,SIZE,SIZE);
+    if(board[r][c]){ctx.fillStyle=board[r][c];ctx.fillRect(c*SIZE+1,r*SIZE+1,SIZE-2,SIZE-2);ctx.strokeStyle='#fff3';ctx.strokeRect(c*SIZE+1,r*SIZE+1,SIZE-2,SIZE-2)}
+  }
+  if(current){
+    const ghost={...current};while(!collide(board,ghost,0,1))ghost.y++;
+    current.shape.forEach((r,y)=>r.forEach((v,x)=>{if(v){ctx.fillStyle=current.color+'22';ctx.fillRect((current.x+x)*SIZE,(ghost.y+y)*SIZE,SIZE,SIZE)}}));
+    current.shape.forEach((r,y)=>r.forEach((v,x)=>{if(v){ctx.fillStyle=current.color;ctx.fillRect((current.x+x)*SIZE+1,(current.y+y)*SIZE+1,SIZE-2,SIZE-2);ctx.strokeStyle='#fff3';ctx.strokeRect((current.x+x)*SIZE+1,(current.y+y)*SIZE+1,SIZE-2,SIZE-2)}}));
+  }
+}
+function drawNext(){
+  nctx.fillStyle='#111';nctx.fillRect(0,0,ncanvas.width,ncanvas.height);
+  if(!nextPiece)return;
+  const offX=(ncanvas.width-nextPiece.shape[0].length*SIZE)/2,offY=(ncanvas.height-nextPiece.shape.length*SIZE)/2;
+  nextPiece.shape.forEach((r,y)=>r.forEach((v,x)=>{if(v){nctx.fillStyle=nextPiece.color;nctx.fillRect(offX+x*SIZE+1,offY+y*SIZE+1,SIZE-2,SIZE-2);nctx.strokeStyle='#fff3';nctx.strokeRect(offX+x*SIZE+1,offY+y*SIZE+1,SIZE-2,SIZE-2)}}));
+}
+function drop(){
+  if(!collide(board,current,0,1)){current.y++}
+  else{merge(board,current);clearLines();current=nextPiece;nextPiece=newPiece();if(collide(board,current))gameOver=true}
+}
+function hardDrop(){while(!collide(board,current,0,1))current.y++;drop()}
+function rotate(){const s=current.shape;const n=s[0].map((_,c)=>s.map(r=>r[c]).reverse());const old=current.shape;current.shape=n;if(collide(board,current)){if(!collide(board,current,1,0))current.x++;else if(!collide(board,current,-1,0))current.x--;else if(!collide(board,current,2,0))current.x+=2;else if(!collide(board,current,-2,0))current.x-=2;else current.shape=old}}
+function loop(time=0){
+  if(gameOver){document.getElementById('over').style.display='block';return}
+  const delta=time-lastTime;lastTime=time;dropCounter+=delta;
+  if(dropCounter>=dropInterval){drop();dropCounter=0}
+  drawBoard();drawNext();requestAnimationFrame(loop);
+}
+function init(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  score=0;level=1;lines=0;dropInterval=1000;dropCounter=0;gameOver=false;
+  current=newPiece();nextPiece=newPiece();updateUI();
+  document.getElementById('over').style.display='none';
+  lastTime=performance.now();requestAnimationFrame(loop);
+}
+document.addEventListener('keydown',e=>{
+  if(gameOver){if(e.key==='r'||e.key==='R')init();return}
+  if(e.key==='ArrowLeft'&&!collide(board,current,-1,0))current.x--;
+  else if(e.key==='ArrowRight'&&!collide(board,current,1,0))current.x++;
+  else if(e.key==='ArrowDown'){drop();score+=1;updateUI()}
+  else if(e.key==='ArrowUp')rotate();
+  else if(e.key===' '){hardDrop();score+=(current.y);updateUI()}
+  e.preventDefault();
+});
+init();
+</script>
+</body>
+</html>

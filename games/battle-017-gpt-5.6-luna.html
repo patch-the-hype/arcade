@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon//Maze</title>
+<style>
+:root{--cyan:#51f6ff;--pink:#ff3ea5;--ink:#080a18;--muted:#8491b5}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#171b42 0,#080a18 48%,#03040b 100%);color:#eafcff;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}body{display:grid;place-items:center;padding:20px;overflow-x:hidden}main{width:min(900px,100%);position:relative}header{display:flex;justify-content:space-between;align-items:end;margin:0 0 14px;gap:15px}h1{margin:0;font-size:clamp(24px,5vw,46px);letter-spacing:-3px;text-shadow:0 0 18px var(--cyan)}h1 b{color:var(--pink)}.tag{font-size:10px;letter-spacing:2px;color:var(--muted);text-align:right;line-height:1.7}.panel{border:1px solid #29315f;background:#0a0d20dd;box-shadow:0 0 0 1px #111631,0 0 40px #161c4b88, inset 0 0 35px #111737;border-radius:10px;padding:clamp(12px,3vw,24px)}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.stat{border-left:2px solid var(--cyan);padding:3px 10px;background:#0c1027}.stat:nth-child(2){border-color:var(--pink)}.stat:nth-child(3){border-color:#b56cff}.stat:nth-child(4){border-color:#f6d365}.label{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.value{font-size:18px;color:#fff}.wrap{position:relative;display:grid;place-items:center;background:#050711;border:1px solid #222957;border-radius:5px;overflow:hidden}canvas{display:block;max-width:100%;image-rendering:pixelated}.hint{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.5px;padding-top:13px}.hint strong{color:var(--cyan);font-weight:400}.toast{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .2s;background:#050711aa}.toast.show{opacity:1}.toast div{text-align:center;padding:18px 28px;border:1px solid var(--cyan);background:#080b1df5;box-shadow:0 0 26px #51f6ff66}.toast b{display:block;color:var(--pink);font-size:20px;margin-bottom:8px}.scan{position:absolute;inset:0;pointer-events:none;background:linear-gradient(#ffffff03 50%,#0000000b 50%);background-size:100% 4px}
+@media(max-width:560px){body{padding:10px}.hud{gap:5px}.stat{padding:3px 6px}.value{font-size:14px}.label{font-size:8px}.hint{font-size:8px}}
+</style>
+</head>
+<body><main>
+<header><h1>NEON<b>//</b>MAZE</h1><div class="tag">SECTOR RUNNER<br>PROCEDURAL SYSTEM ONLINE</div></header>
+<section class="panel"><div class="hud"><div class="stat"><span class="label">LEVEL</span><span class="value" id="level">01</span></div><div class="stat"><span class="label">MOVES</span><span class="value" id="moves">000</span></div><div class="stat"><span class="label">TIME</span><span class="value" id="time">00:00</span></div><div class="stat"><span class="label">STATUS</span><span class="value" id="status">READY</span></div></div><div class="wrap"><canvas id="game"></canvas><div class="scan"></div><div class="toast" id="toast"><div><b id="toastTitle">SECTOR CLEARED</b><span id="toastText">Next maze loading...</span></div></div></div><div class="hint"><span>ARROW KEYS / WASD TO MOVE</span><strong>REACH THE PINK CORE</strong><span>R = RESTART</span></div></section>
+</main>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),$=id=>document.getElementById(id);
+let level=1,moves=0,start=0,elapsed=0,running=true,player={x:0,y:0},goal={x:0,y:0},maze=[],size=0,cell=0,timer;
+function newMaze(){size=Math.min(31,9+level*2)|1; maze=Array.from({length:size},()=>Array(size).fill(1)); const stack=[[1,1]];maze[1][1]=0;
+ while(stack.length){let [x,y]=stack.at(-1),opts=[[2,0],[-2,0],[0,2],[0,-2]].filter(([dx,dy])=>x+dx>0&&y+dy>0&&x+dx<size-1&&y+dy<size-1&&maze[y+dy][x+dx]);if(!opts.length){stack.pop();continue}let [dx,dy]=opts[Math.random()*opts.length|0];maze[y+dy/2][x+dx/2]=0;maze[y+dy][x+dx]=0;stack.push([x+dx,y+dy])}
+ player={x:1,y:1};goal={x:size-2,y:size-2};moves=0;start=performance.now();running=true;resize();update();$('status').textContent='RUN';hideToast()}
+function resize(){let max=Math.min(innerWidth-40,860),d=Math.floor(max/size);cell=Math.max(8,d);canvas.width=canvas.height=cell*size;draw()}
+function draw(){ctx.fillStyle='#050711';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.shadowBlur=0;for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(maze[y][x]){ctx.fillStyle='#0c1230';ctx.fillRect(x*cell,y*cell,cell,cell);ctx.strokeStyle='#182256';ctx.strokeRect(x*cell+.5,y*cell+.5,cell-1,cell-1)}
+ let pulse=0.7+Math.sin(performance.now()/180)*.25;ctx.shadowColor='#ff3ea5';ctx.shadowBlur=18;ctx.fillStyle=`rgba(255,62,165,${pulse})`;ctx.beginPath();ctx.arc((goal.x+.5)*cell,(goal.y+.5)*cell,cell*.27,0,7);ctx.fill();ctx.shadowBlur=14;ctx.shadowColor='#51f6ff';ctx.fillStyle='#51f6ff';ctx.beginPath();ctx.arc((player.x+.5)*cell,(player.y+.5)*cell,cell*.25,0,7);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#d9ffff';ctx.lineWidth=1;ctx.stroke();requestAnimationFrame(draw)}
+function update(){let s=Math.floor(elapsed/1000),m=Math.floor(s/60);$('level').textContent=String(level).padStart(2,'0');$('moves').textContent=String(moves).padStart(3,'0');$('time').textContent=String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function tick(){if(running){elapsed=performance.now()-start;update()}requestAnimationFrame(tick)}
+function move(dx,dy){if(!running||maze[player.y+dy]?.[player.x+dx])return;player.x+=dx;player.y+=dy;moves++;update();if(player.x===goal.x&&player.y===goal.y)clearLevel()}
+function clearLevel(){running=false;elapsed=performance.now()-start;update();$('status').textContent='CLEAR';$('toastTitle').textContent='SECTOR CLEARED';$('toastText').textContent=`LEVEL ${level} COMPLETE  //  NEXT INCOMING`;showToast();setTimeout(()=>{level++;newMaze()},1200)}
+function restart(){newMaze()};function showToast(){$('toast').classList.add('show')}function hideToast(){$('toast').classList.remove('show')}
+addEventListener('keydown',e=>{let k=e.key.toLowerCase(),v={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];if(v){e.preventDefault();move(...v)}if(k==='r')restart()});addEventListener('resize',resize);newMaze();tick();
+</script></body></html>

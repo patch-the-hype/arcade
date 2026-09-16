@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Runner</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#080b19;color:#d9f7ff;font-family:monospace}body{display:grid;place-items:center;padding:16px}main{width:min(960px,100%);text-align:center}h1{margin:0 0 8px;color:#ff48d7;font-size:clamp(25px,5vw,44px);letter-spacing:8px;text-shadow:0 0 8px #ff48d7,0 0 22px #7938ff}p{margin:6px 0 14px;color:#75eaff;font-size:12px}canvas{display:block;width:100%;height:auto;border:2px solid #26e6ff;box-shadow:0 0 12px #26e6ff,0 0 45px #251d75;background:#0b1028;image-rendering:pixelated}small{display:block;margin-top:10px;color:#69829d;letter-spacing:1px}
+</style>
+</head>
+<body>
+<main><h1>NEON RUNNER</h1><p>SPACE / ↑ JUMP &nbsp; • &nbsp; ↓ DUCK &nbsp; • &nbsp; ANY KEY RESTARTS</p><canvas id="game" width="900" height="420" aria-label="Playable endless runner"></canvas><small>RUN THE GRID // DODGE THE VOID</small></main>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d'),W=c.width,H=c.height,ground=340;
+let best=+localStorage.neonRunnerBest||0,score=0,speed=6,over=false,started=false,last=0,spawn=0,stars=[],obs=[],dust=[];
+const d={x:105,y:ground-58,w:34,h:58,vy:0,duck:false,onGround:true};
+for(let i=0;i<70;i++)stars.push({x:Math.random()*W,y:Math.random()*280,r:Math.random()*2+1,a:Math.random()});
+function reset(){score=0;speed=6;over=false;started=true;spawn=0;obs=[];dust=[];d.y=ground-d.h;d.vy=0;d.duck=false;requestAnimationFrame(loop)}
+function key(e){if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(over&&!e.repeat){reset();return}if(e.code==='Space'||e.code==='ArrowUp')jump();if(e.code==='ArrowDown')d.duck=true}
+function up(e){if(e.code==='ArrowDown')d.duck=false}
+function jump(){if(d.onGround&&!over){d.vy=-15;d.onGround=false;started=true}}
+addEventListener('keydown',key);addEventListener('keyup',up);addEventListener('blur',()=>d.duck=false);
+function addObstacle(){let flying=Math.random()<.24&&score>180,h=flying?18:25+Math.random()*35,w=flying?44:20+Math.random()*22;obs.push({x:W+25,y:flying?ground-84:ground-h,w,h,kind:flying?'drone':'spike'});spawn=55+Math.random()*70-speed*3}
+function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function update(dt){
+ speed=Math.min(15,speed+.0018*dt);score+=speed*dt*.06;spawn-=dt;if(spawn<0)addObstacle();
+ let dh=d.duck&&d.onGround?32:58;d.h=dh;d.y+=d.vy*dt;d.vy+=.7*dt;if(d.y>=ground-d.h){d.y=ground-d.h;d.vy=0;d.onGround=true}
+ obs.forEach(o=>o.x-=speed*dt);obs=obs.filter(o=>o.x+o.w>-10);
+ dust.push({x:d.x+4,y:ground-2,life:1});dust=dust.filter(p=>(p.x-=speed*.35*dt,p.life-=.045*dt)>0);
+ let box={x:d.x+5,y:d.y+5,w:d.w-10,h:d.h-8};if(obs.some(o=>hit(box,o))){over=true;best=Math.max(best,Math.floor(score));localStorage.neonRunnerBest=best}
+}
+function text(t,y,size,color,align='center'){x.fillStyle=color;x.font=`bold ${size}px monospace`;x.textAlign=align;x.fillText(t,W/2,y)}
+function draw(){
+ x.clearRect(0,0,W,H);let g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#090d27');g.addColorStop(1,'#171035');x.fillStyle=g;x.fillRect(0,0,W,H);
+ stars.forEach(s=>{x.globalAlpha=.35+s.a*.45;x.fillStyle='#77eaff';x.fillRect((s.x-score*.15)%W,s.y,s.r,s.r)});x.globalAlpha=1;
+ x.strokeStyle='#22275a';x.lineWidth=1;for(let i=0;i<12;i++){let yy=ground+i*i*1.7;x.beginPath();x.moveTo(0,yy);x.lineTo(W,yy);x.stroke()}for(let i=-10;i<20;i++){let xx=(i*75-score*speed*.08)%W;x.beginPath();x.moveTo(W/2,ground);x.lineTo(xx,H);x.stroke()}
+ x.shadowBlur=12;x.shadowColor='#26e6ff';x.strokeStyle='#26e6ff';x.lineWidth=3;x.beginPath();x.moveTo(0,ground);x.lineTo(W,ground);x.stroke();x.shadowBlur=0;
+ dust.forEach(p=>{x.globalAlpha=p.life;x.fillStyle='#ff48d7';x.fillRect(p.x,p.y,5,2)});x.globalAlpha=1;
+ obs.forEach(o=>{x.shadowBlur=12;x.shadowColor='#ff3d9e';x.fillStyle='#ff3d9e';if(o.kind==='spike'){x.beginPath();x.moveTo(o.x,o.y+o.h);x.lineTo(o.x+o.w/2,o.y);x.lineTo(o.x+o.w,o.y+o.h);x.closePath();x.fill()}else{x.fillRect(o.x,o.y,o.w,o.h);x.fillStyle='#ffd447';x.fillRect(o.x+8,o.y+5,5,5);x.fillRect(o.x+o.w-13,o.y+5,5,5)}x.shadowBlur=0});
+ x.shadowBlur=16;x.shadowColor='#7df9ff';x.fillStyle='#7df9ff';x.fillRect(d.x,d.y,d.w,d.h);x.fillStyle='#11142e';x.fillRect(d.x+23,d.y+10,6,6);x.fillRect(d.x-7,d.y+18,9,7);x.fillStyle='#ff48d7';x.fillRect(d.x+5,d.y+8,7,4);x.shadowBlur=0;
+ x.textAlign='left';x.fillStyle='#d9f7ff';x.font='bold 18px monospace';x.fillText(`SCORE ${Math.floor(score).toString().padStart(5,'0')}`,22,32);x.fillStyle='#ffda5b';x.fillText(`BEST ${best.toString().padStart(5,'0')}`,22,56);x.textAlign='right';x.fillStyle='#75eaff';x.fillText(`SPEED ${(speed/6).toFixed(1)}x`,W-22,32);
+ if(!started){text('PRESS SPACE TO RUN',190,28,'#ff48d7');text('DODGE THE DIGITAL WILDS',224,14,'#75eaff')}if(over){x.fillStyle='rgba(6,7,20,.72)';x.fillRect(0,0,W,H);text('SYSTEM CRASHED',175,38,'#ff48d7');text(`SCORE ${Math.floor(score)}  •  BEST ${best}`,215,17,'#d9f7ff');text('PRESS ANY KEY TO REBOOT',270,18,'#75eaff')}
+}
+function loop(t){if(!started)return;let dt=Math.min(2,(t-last)/16.67||1);last=t;if(!over)update(dt);draw();if(!over)requestAnimationFrame(loop)}draw();
+</script>
+</body>
+</html>

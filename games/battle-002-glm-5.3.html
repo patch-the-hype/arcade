@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON PONG</title>
+<style>
+  html,body{margin:0;height:100%;background:#05050a;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  canvas{box-shadow:0 0 40px #0ff3}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="500"></canvas>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, PW = 12, PH = 80, R = 8;
+const BASE = 5, MAX = 18, INC = 0.4;
+
+const state = { running:false, over:false, rally:0 };
+const keys = {};
+const left = { y:H/2-PH/2, score:0 };
+const right = { y:H/2-PH/2, score:0 };
+const ball = { x:W/2, y:H/2, vx:0, vy:0 };
+
+function reset(dir){
+  ball.x = W/2; ball.y = H/2;
+  const a = (Math.random()*0.6 - 0.3) + (Math.random()<0.5 ? 0 : Math.PI);
+  const sp = BASE + state.rally*INC*0.5;
+  ball.vx = Math.cos(a)*sp*(dir||1); ball.vy = Math.sin(a)*sp;
+}
+
+function start(){
+  state.running = true; state.over = false; state.rally = 0;
+  left.score = 0; right.score = 0;
+  left.y = right.y = H/2-PH/2;
+  reset(Math.random()<0.5?1:-1);
+}
+
+function speed(){ return Math.hypot(ball.vx, ball.vy); }
+
+function paddleBounce(p, px){
+  const rel = (ball.y - (p.y+PH/2)) / (PH/2);        // -1..1
+  const sp = Math.min(speed()+INC, MAX);
+  const ang = rel * 0.9;                             // max ~51deg
+  const dir = px < W/2 ? 1 : -1;
+  ball.vx = Math.cos(ang)*sp*dir; ball.vy = Math.sin(ang)*sp;
+  state.rally++;
+}
+
+function update(){
+  const PS = 6;
+  if(keys['w']) left.y -= PS;
+  if(keys['s']) left.y += PS;
+  if(keys['ArrowUp']) right.y -= PS;
+  if(keys['ArrowDown']) right.y += PS;
+  left.y = Math.max(0, Math.min(H-PH, left.y));
+  right.y = Math.max(0, Math.min(H-PH, right.y));
+
+  ball.x += ball.vx; ball.y += ball.vy;
+
+  if(ball.y-R < 0){ ball.y = R; ball.vy = Math.abs(ball.vy); }
+  if(ball.y+R > H){ ball.y = H-R; ball.vy = -Math.abs(ball.vy); }
+
+  if(ball.vx < 0 && ball.x-R < PW && ball.x-R > PW-14 && ball.y > left.y-R && ball.y < left.y+PH+R)
+    { ball.x = PW+R; paddleBounce(left, PW); }
+  if(ball.vx > 0 && ball.x+R > W-PW && ball.x+R < W-PW+14 && ball.y > right.y-R && ball.y < right.y+PH+R)
+    { ball.x = W-PW-R; paddleBounce(right, W-PW); }
+
+  if(ball.x < -R*2){ right.score++; state.rally=0; reset(1); }
+  if(ball.x > W+R*2){ left.score++; state.rally=0; reset(-1); }
+
+  if(left.score >= 7 || right.score >= 7) state.running = false, state.over = true;
+}
+
+function neon(color, blur){ ctx.shadowColor = color; ctx.shadowBlur = blur; ctx.fillStyle = color; }
+
+function draw(){
+  ctx.fillStyle = '#05050a';
+  ctx.fillRect(0,0,W,H);
+
+  // center dashed line
+  neon('#0ff', 10);
+  for(let y=10; y<H; y+=30) ctx.fillRect(W/2-2, y, 4, 16);
+
+  // scores
+  ctx.font = '48px monospace'; ctx.textAlign = 'center';
+  neon('#f0f', 20); ctx.fillText(left.score, W/2-80, 60);
+  neon('#0ff', 20); ctx.fillText(right.score, W/2+80, 60);
+
+  // paddles
+  neon('#f0f', 18); ctx.fillRect(0, left.y, PW, PH);
+  neon('#0ff', 18); ctx.fillRect(W-PW, right.y, PW, PH);
+
+  // ball
+  neon('#ff0', 22); ctx.beginPath(); ctx.arc(ball.x, ball.y, R, 0, Math.PI*2); ctx.fill();
+
+  ctx.shadowBlur = 0;
+
+  if(!state.running){
+    ctx.font = '28px monospace';
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    if(state.over){
+      const w = left.score >= 7 ? 'LEFT' : 'RIGHT';
+      ctx.fillText(w + ' WINS!', W/2, H/2 - 10);
+      ctx.font = '18px monospace';
+      ctx.fillText('press any key to restart', W/2, H/2 + 24);
+    } else {
+      ctx.fillText('NEON PONG', W/2, H/2 - 40);
+      ctx.font = '16px monospace';
+      ctx.fillText('W/S — left paddle    \u2191/\u2193 — right paddle', W/2, H/2 + 4);
+      ctx.fillText('first to 7 wins', W/2, H/2 + 28);
+      ctx.fillText('press any key to start', W/2, H/2 + 56);
+    }
+  }
+}
+
+let last = 0;
+function loop(t){
+  // fixed-step update, capped, so ~60fps gameplay regardless of monitor Hz
+  if(t - last >= 1000/60 - 1){
+    last = t;
+    if(state.running) update();
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+addEventListener('keydown', e => {
+  if(['ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = true;
+  if(!state.running) start();
+});
+addEventListener('keyup', e => {
+  keys[e.key.length === 1 ? e.key.toLowerCase() : e.key] = false;
+});
+
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

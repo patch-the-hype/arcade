@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON BREAKOUT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Courier New',monospace;overflow:hidden}
+canvas{border:2px solid #0ff;box-shadow:0 0 20px #0ff,inset 0 0 20px rgba(0,255,255,0.1)}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="600"></canvas>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const W=800,H=600;
+let paddle={x:W/2-50,y:H-30,w:100,h:12,speed:7};
+let ball={x:W/2,y:H-50,r:8,dx:4,dy:-4,baseSpeed:4};
+let bricks=[],rows=6,cols=10,brickW=70,brickH=20,brickPad=5,brickTop=50,brickLeft=35;
+let score=0,lives=3,started=false,gameOver=false,won=false;
+let keys={},speedMultiplier=1,totalBricks=rows*cols,brokenBricks=0;
+const colors=['#ff00ff','#00ffff','#ff0066','#ffff00','#00ff66','#ff6600'];
+
+function initBricks(){
+  bricks=[];
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)
+    bricks.push({x:c*(brickW+brickPad)+brickLeft,y:r*(brickH+brickPad)+brickTop,alive:true,color:colors[r%colors.length]});
+}
+
+function resetBall(){
+  ball.x=W/2;ball.y=H-50;
+  ball.dx=ball.baseSpeed*(Math.random()>0.5?1:-1);
+  ball.dy=-ball.baseSpeed;
+  started=false;
+}
+
+function drawNeon(text,x,y,color,size=20){
+  ctx.font=`bold ${size}px 'Courier New'`;
+  ctx.shadowColor=color;ctx.shadowBlur=15;
+  ctx.fillStyle=color;ctx.fillText(text,x,y);
+  ctx.shadowBlur=0;
+}
+
+function drawPaddle(){
+  ctx.shadowColor='#0ff';ctx.shadowBlur=15;
+  ctx.fillStyle='#0ff';
+  ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+  ctx.shadowBlur=0;
+}
+
+function drawBall(){
+  ctx.shadowColor='#fff';ctx.shadowBlur=20;
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+}
+
+function drawBricks(){
+  bricks.forEach(b=>{
+    if(!b.alive)return;
+    ctx.shadowColor=b.color;ctx.shadowBlur=10;
+    ctx.fillStyle=b.color;
+    ctx.fillRect(b.x,b.y,brickW,brickH);
+    ctx.shadowBlur=0;
+  });
+}
+
+function drawHUD(){
+  drawNeon(`SCORE: ${score}`,20,30,'#0ff',18);
+  drawNeon(`LIVES: ${lives}`,W-150,30,'#f0f',18);
+}
+
+function drawStartScreen(){
+  drawNeon('NEON BREAKOUT',W/2-150,H/2-40,'#0ff',36);
+  drawNeon('PRESS ANY KEY TO START',W/2-180,H/2+20,'#ff0',18);
+  drawNeon('ARROWS / A-D / MOUSE',W/2-160,H/2+50,'#f0f',14);
+}
+
+function drawGameOver(){
+  drawNeon(won?'YOU WIN!':'GAME OVER',W/2-120,H/2-20,won?'#0f0':'#f00',36);
+  drawNeon(`FINAL SCORE: ${score}`,W/2-100,H/2+30,'#ff0',20);
+  drawNeon('PRESS ANY KEY TO RESTART',W/2-160,H/2+70,'#0ff',16);
+}
+
+function movePaddle(){
+  if(keys['ArrowLeft']||keys['a']||keys['A'])paddle.x-=paddle.speed;
+  if(keys['ArrowRight']||keys['d']||keys['D'])paddle.x+=paddle.speed;
+  paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));
+}
+
+function moveBall(){
+  if(!started)return;
+  ball.x+=ball.dx*speedMultiplier;
+  ball.y+=ball.dy*speedMultiplier;
+  if(ball.x-ball.r<0||ball.x+ball.r>W)ball.dx*=-1;
+  if(ball.y-ball.r<0)ball.dy*=-1;
+  if(ball.y+ball.r>H){
+    lives--;
+    if(lives<=0){gameOver=true;return;}
+    resetBall();
+  }
+  if(ball.y+ball.r>=paddle.y&&ball.y-ball.r<=paddle.y+paddle.h&&
+     ball.x>=paddle.x&&ball.x<=paddle.x+paddle.w){
+    let hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);
+    let angle=hit*Math.PI/3;
+    let speed=Math.sqrt(ball.dx*ball.dx+ball.dy*ball.dy)*speedMultiplier;
+    ball.dx=speed*Math.sin(angle);
+    ball.dy=-speed*Math.cos(angle);
+  }
+  bricks.forEach(b=>{
+    if(!b.alive)return;
+    if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+brickW&&
+       ball.y+ball.r>b.y&&ball.y-ball.r<b.y+brickH){
+      b.alive=false;brokenBricks++;score+=10;
+      ball.dy*=-1;
+      speedMultiplier=1+brokenBricks/totalBricks*1.5;
+      if(brokenBricks>=totalBricks){won=true;gameOver=true;}
+    }
+  });
+}
+
+function draw(){
+  ctx.fillStyle='#0a0a0f';ctx.fillRect(0,0,W,H);
+  drawBricks();drawPaddle();drawBall();drawHUD();
+  if(!started&&!gameOver)drawStartScreen();
+  if(gameOver)drawGameOver();
+}
+
+function loop(){
+  if(!gameOver){movePaddle();moveBall();}
+  draw();
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener('mousemove',e=>{
+  let rect=canvas.getBoundingClientRect();
+  paddle.x=e.clientX-rect.left-paddle.w/2;
+  paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x));
+});
+
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(gameOver){
+    score=0;lives=3;brokenBricks=0;speedMultiplier=1;
+    gameOver=false;won=false;initBricks();resetBall();return;
+  }
+  if(!started)started=true;
+});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+
+initBricks();
+loop();
+</script>
+</body>
+</html>

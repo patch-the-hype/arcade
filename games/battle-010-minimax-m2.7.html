@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WHACK-A-MOLE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a12;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:monospace}
+canvas{border:4px solid #0ff;box-shadow:0 0 30px #0ff,inset 0 0 60px rgba(0,255,255,.1)}
+</style>
+</head>
+<body>
+<canvas id="c" width="450" height="550"></canvas>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d'),W=C.width,H=C.height;
+const GRID=3,HOLE_W=110,HOLE_H=90,TOP=80,LEFT=25,GAP=15;
+const KEYS=['Q','W','E','A','S','D','Z','X','C'];
+const COLORS=['#0ff','#f0f','#ff0','#0f0','#f80','#08f','#f08','#80f','#0f8'];
+
+let score=0,combo=1,time=60,active=-1,phase='start', moleTimer=0, shrinkRate=1200;
+let holes=[],mole={},lastTS=0,whacking=-1,whackTimer=0;
+
+function initHoles(){
+  holes=[];
+  for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
+    holes.push({x:LEFT+c*(HOLE_W+GAP),y:TOP+r*(HOLE_H+GAP),w:HOLE_W,h:HOLE_H,hit:false});
+  }
+}
+function reset(){
+  score=0;combo=1;time=60;active=-1;phase='play';moleTimer=0;shrinkRate=1200;
+  whacking=-1;whackTimer=0;initHoles();spawnMole();
+}
+function spawnMole(){
+  active=Math.floor(Math.random()*9);
+  mole={y:holes[active].y+HOLE_H,x:holes[active].x+HOLE_W/2,vy:-2,scale:1};
+  moleTimer=shrinkRate;
+}
+function whack(idx){
+  if(phase!=='play'||idx!==active)return;
+  score+=10*combo;
+  combo++;
+  whacking=idx;whackTimer=15;
+  holes[idx].hit=true;
+  setTimeout(()=>{holes[idx].hit=false;},300);
+  spawnMole();
+}
+function update(dt){
+  if(phase!=='play')return;
+  time-=dt/1000;
+  if(time<=0){time=0;phase='over';return;}
+  moleTimer-=dt;
+  if(moleTimer<=0&&whacking===-1){spawnMole();}
+  if(mole){
+    mole.vy+=0.15;
+    mole.y+=mole.vy;
+    if(mole.y>holes[active].y+HOLE_H-40){mole.y=holes[active].y+HOLE_H-40;mole.vy=0;}
+  }
+  if(whacking!==-1){
+    whackTimer--;
+    if(whackTimer<=0)whacking=-1;
+  }
+}
+function drawHole(x,y,w,h,hit){
+  X.save();
+  X.fillStyle='#1a1a2e';
+  X.beginPath();
+  X.ellipse(x+w/2,y+h-15,w/2-5,25,0,0,Math.PI*2);
+  X.fill();
+  X.strokeStyle=hit?'#0f0':'#333';
+  X.lineWidth=3;
+  X.stroke();
+  X.restore();
+}
+function drawMole(x,y,scale){
+  const s=scale||1;
+  X.save();
+  X.translate(x,y);
+  X.scale(s,s);
+  X.fillStyle='#8B4513';
+  X.beginPath();
+  X.arc(0,-10,28,0,Math.PI*2);
+  X.fill();
+  X.fillStyle='#654321';
+  X.arc(0,5,22,0,Math.PI);
+  X.fill();
+  X.fillStyle='#111';
+  X.beginPath();
+  X.arc(-10,-15,5,0,Math.PI*2);
+  X.arc(10,-15,5,0,Math.PI*2);
+  X.fill();
+  X.fillStyle='#f55';
+  X.beginPath();
+  X.arc(0,-2,6,0,Math.PI*2);
+  X.fill();
+  X.fillStyle='#fff';
+  X.beginPath();
+  X.arc(0,-2,2,0,Math.PI*2);
+  X.fill();
+  X.restore();
+}
+function drawNeonText(txt,x,y,col,sz=24){
+  X.save();
+  X.font=`bold ${sz}px monospace`;
+  X.textAlign='center';
+  X.shadowColor=col;X.shadowBlur=20;
+  X.fillStyle=col;X.fillText(txt,x,y);
+  X.restore();
+}
+function draw(){
+  X.fillStyle='#0a0a12';
+  X.fillRect(0,0,W,H);
+  drawNeonText('WHACK-A-MOLE',W/2,45,'#0ff',32);
+  drawNeonText(`SCORE: ${score}`,80,70,'#ff0',18);
+  drawNeonText(`x${combo}`,W-80,70,combo>5?'#0f0':'#f0f',18);
+  drawNeonText(`TIME: ${Math.ceil(time)}s`,W/2,70,time<10?'#f00':'#0ff',20);
+  for(let i=0;i<9;i++){
+    const h=holes[i];
+    drawHole(h.x,h.y,h.w,h.h,h.hit);
+    if(i===active&&phase==='play'&&whacking===-1){
+      drawMole(mole.x,mole.y,mole.scale);
+    }
+    X.fillStyle='#0ff';
+    X.font='14px monospace';
+    X.textAlign='center';
+    X.fillText(KEYS[i],h.x+h.w/2,h.y+h.h+20);
+  }
+  if(phase==='start'){
+    X.fillStyle='rgba(0,0,0,0.7)';X.fillRect(0,0,W,H);
+    drawNeonText('WHACK-A-MOLE',W/2,H/2-60,'#0ff',36);
+    drawNeonText('KEYS: Q W E / A S D / Z X C',W/2,H/2,'#ff0',16);
+    drawNeonText('OR CLICK WITH MOUSE',W/2,H/2+30,'#f0f',16);
+    drawNeonText('PRESS ANY KEY OR CLICK TO START',W/2,H/2+80,'#0f0',18);
+  }
+  if(phase==='over'){
+    X.fillStyle='rgba(0,0,0,0.8)';X.fillRect(0,0,W,H);
+    drawNeonText('GAME OVER',W/2,H/2-50,'#f00',40);
+    drawNeonText(`FINAL SCORE: ${score}`,W/2,H/2+10,'#ff0',28);
+    drawNeonText(`MAX COMBO: x${combo}`,W/2,H/2+50,'#0f0',22);
+    drawNeonText('CLICK OR PRESS ANY KEY TO RESTART',W/2,H/2+100,'#0ff',16);
+  }
+}
+function loop(ts){
+  const dt=Math.min(ts-lastTS,50);
+  lastTS=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+function getHoleIndex(px,py){
+  for(let i=0;i<9;i++){
+    const h=holes[i];
+    if(px>=h.x&&px<=h.x+h.w&&py>=h.y&&py<=h.y+h.h)return i;
+  }
+  return-1;
+}
+C.addEventListener('click',e=>{
+  const r=C.getBoundingClientRect();
+  const px=(e.clientX-r.left)*(C.width/r.width);
+  const py=(e.clientY-r.top)*(C.height/r.height);
+  if(phase==='start'){reset();return;}
+  if(phase==='over'){reset();return;}
+  const idx=getHoleIndex(px,py);
+  if(idx!==-1)whack(idx);
+});
+document.addEventListener('keydown',e=>{
+  const k=e.key.toUpperCase();
+  if(phase==='start'){reset();return;}
+  if(phase==='over'){reset();return;}
+  const idx=KEYS.indexOf(k);
+  if(idx!==-1)whack(idx);
+});
+initHoles();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

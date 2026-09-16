@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Memory</title>
+<style>
+  body { margin:0; background:#050510; color:#0ff; font-family:'Courier New',monospace; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; }
+  h1 { margin:8px 0; font-size:22px; text-shadow:0 0 10px #0ff,0 0 20px #f0f; }
+  #hud { display:flex; gap:30px; margin-bottom:8px; font-size:16px; text-shadow:0 0 5px #0ff; }
+  canvas { box-shadow:0 0 20px #0ff,0 0 40px #f0f inset; border-radius:8px; background:#0a0a18; cursor:pointer; }
+  #msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; display:none; }
+  #msg p { font-size:28px; text-shadow:0 0 15px #ff0; margin:10px; }
+  button { background:#111; border:2px solid #0ff; color:#0ff; padding:8px 20px; font-family:inherit; font-size:16px; cursor:pointer; box-shadow:0 0 10px #0ff; }
+  button:hover { background:#0ff; color:#000; }
+</style>
+</head>
+<body>
+<h1>NEON MEMORY</h1>
+<div id="hud"><span>Score: <b id="score">0</b></span><span>Moves: <b id="moves">0</b></span></div>
+<canvas id="c" width="600" height="600"></canvas>
+<div id="msg"><p>YOU WIN!</p><button onclick="init()">RESTART (R)</button></div>
+<script>
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+const scoreEl=document.getElementById('score'), movesEl=document.getElementById('moves'), msg=document.getElementById('msg');
+const G=4, N=G*G, PAD=12, CW=(canvas.width-PAD*(G+1))/G, CH=(canvas.height-PAD*(G+1))/G;
+const shapes=[drawCircle,drawSquare,drawTriangle,drawDiamond,drawCross,drawStar,drawHex,drawBolt];
+let cards=[], cursor=0, first=null, busy=false, score=0, moves=0, over=false;
+
+function init(){
+  const vals=[]; for(let i=0;i<N/2;i++){ vals.push(i%shapes.length, i%shapes.length); }
+  for(let i=vals.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [vals[i],vals[j]]=[vals[j],vals[i]]; }
+  cards=vals.map((v,i)=>({v,flip:0,matched:false,x:i%G,y:Math.floor(i/G)}));
+  cursor=0; first=null; busy=false; score=0; moves=0; over=false; msg.style.display='none';
+  updateHUD(); requestAnimationFrame(loop);
+}
+function updateHUD(){ scoreEl.textContent=score; movesEl.textContent=moves; }
+function rect(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+function cardRect(cx,cy){ return [PAD+cx*(CW+PAD), PAD+cy*(CH+PAD), CW, CH]; }
+
+function drawCircle(x,y,w,h){ ctx.beginPath(); ctx.arc(x+w/2,y+h/2,Math.min(w,h)*0.28,0,Math.PI*2); ctx.stroke(); }
+function drawSquare(x,y,w,h){ ctx.strokeRect(x+w*0.25,y+h*0.25,w*0.5,h*0.5); }
+function drawTriangle(x,y,w,h){ ctx.beginPath(); ctx.moveTo(x+w/2,y+h*0.2); ctx.lineTo(x+w*0.8,y+h*0.75); ctx.lineTo(x+w*0.2,y+h*0.75); ctx.closePath(); ctx.stroke(); }
+function drawDiamond(x,y,w,h){ ctx.beginPath(); ctx.moveTo(x+w/2,y+h*0.15); ctx.lineTo(x+w*0.85,y+h/2); ctx.lineTo(x+w/2,y+h*0.85); ctx.lineTo(x+w*0.15,y+h/2); ctx.closePath(); ctx.stroke(); }
+function drawCross(x,y,w,h){ const t=Math.min(w,h)*0.12; ctx.fillRect(x+w*0.4,y+h*0.2,w*0.2,h*0.6); ctx.fillRect(x+w*0.2,y+h*0.4,w*0.6,h*0.2); }
+function drawStar(x,y,w,h){ const cx=x+w/2,cy=y+h/2,r=Math.min(w,h)*0.32; ctx.beginPath(); for(let i=0;i<10;i++){ const a=Math.PI/2+i*Math.PI/5, d=i%2?r*0.4:r; ctx.lineTo(cx+Math.cos(a)*d,cy-Math.sin(a)*d); } ctx.closePath(); ctx.stroke(); }
+function drawHex(x,y,w,h){ const cx=x+w/2,cy=y+h/2,r=Math.min(w,h)*0.3; ctx.beginPath(); for(let i=0;i<6;i++){ const a=i*Math.PI/3; ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); } ctx.closePath(); ctx.stroke(); }
+function drawBolt(x,y,w,h){ ctx.beginPath(); ctx.moveTo(x+w*0.55,y+h*0.15); ctx.lineTo(x+w*0.35,y+h*0.45); ctx.lineTo(x+w*0.55,y+h*0.45); ctx.lineTo(x+w*0.4,y+h*0.85); ctx.lineTo(x+w*0.6,y+h*0.5); ctx.lineTo(x+w*0.42,y+h*0.5); ctx.closePath(); ctx.stroke(); }
+
+function draw(){
+  ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  cards.forEach((c,i)=>{
+    const [x,y,w,h]=cardRect(c.x,c.y);
+    const isCursor=i===cursor && !over;
+    const show=c.matched || c.flip>0.5;
+    const scale=Math.abs(c.flip-0.5)*2; // 0 at middle, 1 at ends
+    const dw=w*scale, dx=x+(w-dw)/2;
+    ctx.save();
+    ctx.shadowBlur=15; ctx.shadowColor=isCursor?'#ff0':(c.matched?'#0f0':'#0ff');
+    ctx.fillStyle=show?'#111':'#1a1a2e'; ctx.strokeStyle=c.matched?'#0f0':(isCursor?'#ff0':'#0ff'); ctx.lineWidth=3;
+    rect(dx+1,y+1,dw-2,h-2,10); ctx.fill(); ctx.stroke(); ctx.restore();
+    if(c.flip>0.5){
+      ctx.save(); ctx.strokeStyle='#f0f'; ctx.lineWidth=4; ctx.shadowBlur=10; ctx.shadowColor='#f0f';
+      shapes[c.v](x+5,y+5,w-10,h-10); ctx.restore();
+    } else if(!c.matched){
+      ctx.fillStyle='#0ff'; ctx.font='bold 40px Courier New'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.shadowBlur=10; ctx.shadowColor='#0ff'; ctx.fillText('?',x+w/2,y+h/2);
+    }
+  });
+}
+function loop(){ cards.forEach(c=>{ if(c.flipping){ c.flip+=0.08; if(c.flip>=1){ c.flip=1; c.flipping=false; } } }); draw(); if(!over) requestAnimationFrame(loop); }
+function setFlip(i,on){ const c=cards[i]; c.flipping=true; c.target=on?1:0; }
+function animateFlip(i,to){ return new Promise(r=>{ const c=cards[i], dir=to?0.08:-0.08; const t=setInterval(()=>{ c.flip+=dir; if(c.flip<=0){ c.flip=0; clearInterval(t); r(); } if(c.flip>=1){ c.flip=1; clearInterval(t); r(); } },16); }); }
+
+async function pick(i){
+  if(over||busy||cards[i].matched||cards[i].flip>0.5) return;
+  busy=true; await animateFlip(i,1);
+  if(first===null){ first=i; busy=false; return; }
+  moves++; updateHUD();
+  const a=first, b=i; first=null;
+  if(cards[a].v===cards[b].v){ cards[a].matched=cards[b].matched=true; score++; updateHUD(); checkWin(); busy=false; }
+  else { setTimeout(async()=>{ await animateFlip(a,0); await animateFlip(b,0); busy=false; },700); }
+}
+function checkWin(){ if(cards.every(c=>c.matched)){ over=true; msg.style.display='block'; } }
+function moveCursor(dx,dy){ if(over) return; cursor=(cursor+dx+dy*G+G*G)%(G*G); }
+
+function click(e){
+  const r=canvas.getBoundingClientRect(), s=canvas.width/r.width;
+  const mx=(e.clientX-r.left)*s, my=(e.clientY-r.top)*s;
+  for(let i=0;i<cards.length;i++){ const [x,y,w,h]=cardRect(cards[i].x,cards[i].y); if(mx>=x&&mx<=x+w&&my>=y&&my<=y+h){ cursor=i; pick(i); break; } }
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') moveCursor(1,0); else if(e.key==='ArrowLeft') moveCursor(-1,0); else if(e.key==='ArrowDown') moveCursor(0,1); else if(e.key==='ArrowUp') moveCursor(0,-1);
+  else if(e.key===' '){ e.preventDefault(); pick(cursor); }
+  else if(e.key==='r'||e.key==='R') init();
+});
+canvas.addEventListener('mousedown',click);
+init();
+</script>
+</body>
+</html>

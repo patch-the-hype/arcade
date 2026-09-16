@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Neon Memory</title>
+<style>
+  body { margin:0; background:#050510; display:flex; align-items:center; justify-content:center; height:100vh; }
+  canvas { box-shadow:0 0 40px #0ff8, 0 0 80px #f0f8; border:2px solid #0ff; border-radius:12px; background:#080820; }
+</style>
+</head>
+<body>
+<canvas id="c" width="640" height="760"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),T=24;
+const W=c.width,H=c.height,C=4,R=4,M=8,pad=20,cw=110,ch=130;
+const gw=C*cw+(C-1)*pad, gh=R*ch+(R-1)*pad;
+const offX=(W-gw)/2, offY=120;
+const faces=['★','⚡','☀','♦','♠','♥','♣','✦'];
+let cards=[],sel=-1,first=null,second=null,score=0,moves=0,over=false,keys={};
+function init(){
+  let v=[];
+  for(let i=0;i<M;i++){v.push(i);v.push(i);}
+  for(let i=v.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[v[i],v[j]]=[v[j],v[i]];}
+  cards=[];
+  for(let i=0;i<R*C;i++){
+    const r=Math.floor(i/C), col=i%C;
+    cards.push({x:offX+col*(cw+pad),y:offY+r*(ch+pad),w:cw,h:ch,v:v[i],f:false,m:false,a:0});
+  }
+  sel=0;first=null;second=null;score=0;moves=0;over=false;
+}
+function rect(cx,cy,w,h,r,fill,stroke){
+  x.beginPath();x.moveTo(cx+r,cy);x.lineTo(cx+w-r,cy);x.quadraticCurveTo(cx+w,cy,cx+w,cy+r);
+  x.lineTo(cx+w,cy+h-r);x.quadraticCurveTo(cx+w,cy+h,cx+w-r,cy+h);
+  x.lineTo(cx+r,cy+h);x.quadraticCurveTo(cx,cy+h,cx,cy+h-r);
+  x.lineTo(cx,cy+r);x.quadraticCurveTo(cx,cy,cx+r,cy);x.closePath();
+  if(fill){x.fillStyle=fill;x.fill();} if(stroke){x.strokeStyle=stroke;x.lineWidth=3;x.stroke();}
+}
+function neon(t){x.save();x.shadowBlur=20;x.shadowColor=t==='front'?'#f0f':'#0ff';x.restore();}
+function drawCard(cd){
+  const cx=cd.x+cd.w/2,cy=cd.y+cd.h/2;
+  const s=Math.abs(Math.cos(cd.a*Math.PI));
+  x.save();
+  x.translate(cx,cy); x.scale(s,1);
+  if(cd.a<0.5){
+    x.shadowBlur=15; x.shadowColor='#0ff';
+    rect(-cd.w/2,-cd.h/2,cd.w,cd.h,8,'#0b1b2b','#0ff');
+    x.fillStyle='#0ff'; x.font='bold 40px monospace'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('?',0,0);
+  } else {
+    x.shadowBlur=15; x.shadowColor=cd.m?'#0f0':'#f0f';
+    rect(-cd.w/2,-cd.h/2,cd.w,cd.h,8,cd.m?'#052005':'#1a051a',cd.m?'#0f0':'#f0f');
+    x.fillStyle=cd.m?'#0f0':'#f0f'; x.font='bold 60px monospace'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText(faces[cd.v],0,0);
+  }
+  x.restore();
+}
+function draw(){
+  x.fillStyle='#050510'; x.fillRect(0,0,W,H);
+  // header
+  x.shadowBlur=10; x.shadowColor='#0ff'; x.fillStyle='#0ff'; x.font='bold 42px monospace'; x.textAlign='center';
+  x.fillText('NEON MEMORY',W/2,55);
+  x.shadowBlur=8; x.shadowColor='#f0f'; x.fillStyle='#f0f'; x.font='22px monospace';
+  x.fillText(`PAIRS ${score}/${M}   MOVES ${moves}`,W/2,95);
+  // cards
+  for(let i=0;i<cards.length;i++) drawCard(cards[i]);
+  // cursor
+  if(!over){
+    const cd=cards[sel];
+    x.save(); x.strokeStyle='#ff0'; x.lineWidth=3; x.shadowBlur=15; x.shadowColor='#ff0';
+    x.strokeRect(cd.x-5,cd.y-5,cd.w+10,cd.h+10); x.restore();
+  }
+  // win overlay
+  if(over){
+    x.fillStyle='rgba(0,0,0,0.75)'; x.fillRect(0,0,W,H);
+    x.shadowBlur=25; x.shadowColor='#0f0'; x.fillStyle='#0f0'; x.font='bold 56px monospace'; x.textAlign='center';
+    x.fillText('YOU WIN!',W/2,H/2-30);
+    x.font='24px monospace'; x.fillStyle='#fff'; x.shadowBlur=0;
+    x.fillText(`Moves: ${moves}  |  SPACE to restart`,W/2,H/2+25);
+  }
+}
+function update(){
+  for(let cd of cards){
+    const target=cd.f||cd.m?1:0;
+    if(cd.a<target) cd.a=Math.min(target,cd.a+0.08);
+    else if(cd.a>target) cd.a=Math.max(target,cd.a-0.08);
+  }
+}
+function check(){
+  if(cards[first].v===cards[second].v){
+    cards[first].m=true; cards[second].m=true; score++;
+    first=null; second=null;
+    if(score===M) over=true;
+  } else {
+    setTimeout(()=>{cards[first].f=false;cards[second].f=false;first=null;second=null;},800);
+  }
+}
+function flip(i){
+  if(over||cards[i].f||cards[i].m||first!==null&&second!==null) return;
+  cards[i].f=true;
+  if(first===null){first=i;}
+  else if(first!==i){second=i; moves++; check();}
+}
+function moveSel(dx,dy){
+  if(over) return;
+  const col=sel%C,row=Math.floor(sel/C);
+  const nc=(col+dx+C)%C, nr=(row+dy+R)%R;
+  sel=nr*C+nc;
+}
+c.addEventListener('mousemove',e=>{
+  const r=c.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  for(let i=0;i<cards.length;i++){
+    const cd=cards[i];
+    if(mx>=cd.x&&mx<=cd.x+cd.w&&my>=cd.y&&my<=cd.y+cd.h) sel=i;
+  }
+});
+c.addEventListener('click',()=>flip(sel));
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'){moveSel(0,-1);e.preventDefault();}
+  else if(e.key==='ArrowDown'){moveSel(0,1);e.preventDefault();}
+  else if(e.key==='ArrowLeft'){moveSel(-1,0);e.preventDefault();}
+  else if(e.key==='ArrowRight'){moveSel(1,0);e.preventDefault();}
+  else if(e.key===' '){e.preventDefault(); if(over){init();} else {flip(sel);}}
+});
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
+init(); loop();
+</script>
+</body>
+</html>

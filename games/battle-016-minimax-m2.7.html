@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WHACK-A-MOLE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Courier New',monospace;overflow:hidden}
+#c{display:block;cursor:crosshair;image-rendering:pixelated}
+#ui{position:absolute;top:20px;left:0;right:0;display:flex;justify-content:center;gap:60px;color:#fff;font-size:20px;text-shadow:0 0 10px #0ff}
+.score{color:#0ff}.combo{color:#f0f}.timer{color:#ff0}
+#over{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;display:none}
+#over h1{font-size:48px;color:#f0f;text-shadow:0 0 20px #f0f,0 0 40px #f0f;margin-bottom:20px}
+#over p{font-size:24px;color:#0ff;text-shadow:0 0 10px #0ff;margin-bottom:30px}
+#over button{background:transparent;border:2px solid #0ff;color:#0ff;padding:15px 40px;font-size:20px;cursor:pointer;text-shadow:0 0 10px #0ff;box-shadow:0 0 20px #0ff;transition:all .2s}
+#over button:hover{background:#0ff;color:#0a0a0f;box-shadow:0 0 40px #0ff}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui"><span class="score">SCORE: <span id="s">0</span></span><span class="combo">COMBO: <span id="co">x1</span></span><span class="timer">TIME: <span id="t">60</span></span></div>
+<div id="over"><h1>GAME OVER</h1><p>FINAL SCORE: <span id="fs">0</span></p><button onclick="restart()">PLAY AGAIN</button></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let W,H,holes=[],moles=[],score=0,combo=1,time=60,gameover=false,lastTime=0,shrinkRate=0.985,baseUpTime=1200,minUpTime=400;
+const keys={},mouse={x:0,y:0,down:false};
+const keyMap={'1':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6,'8':7,'9':8,'q':0,'w':1,'e':2,'a':3,'s':4,'d':5,'z':6,'x':7,'c':8};
+
+function resize(){
+  W=H=Math.min(window.innerWidth,window.innerHeight)-40;
+  c.width=W;c.height=H;
+  initHoles();
+}
+function initHoles(){
+  holes=[];moles=[];
+  const gs=W/4,hs=H/4,hr=gs/3;
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+    const cx=gs*(c+1),cy=hs*(r+1);
+    holes.push({x:cx,y:cy,r:hr});
+    moles.push({holeIdx:r*3+c,up:false,upTime:0,t:0,h:0,whacked:false});
+  }
+}
+function moleUp(mi){
+  const m=moles[mi];
+  if(m.up||gameover)return;
+  m.up=true;m.whacked=false;m.t=0;
+  m.upTime=Math.max(minUpTime,baseUpTime*(m.h?Math.pow(shrinkRate,m.h):1));
+  m.h=0;
+}
+function whack(mi){
+  if(!moles[mi].up||moles[mi].whacked||gameover)return;
+  moles[mi].whacked=true;moles[mi].up=false;
+  combo++;score+=10*combo;
+  document.getElementById('s').textContent=score;
+  document.getElementById('co').textContent='x'+combo;
+  spawnHit(mi);
+}
+function spawnHit(mi){
+  const h=holes[mi];
+  for(let i=0;i<8;i++){
+    const a=Math.PI*2*i/8,v={x:h.x+Math.cos(a)*10,y:h.y+Math.sin(a)*10,vx:Math.cos(a)*4,vy:Math.sin(a)*4,life:1};
+    if(!window.hits)window.hits=[];
+    window.hits.push(v);
+  }
+}
+function updateHits(dt){
+  if(!window.hits)return;
+  window.hits=window.hits.filter(h=>{h.x+=h.vx;h.y+=h.vy;h.life-=dt*3;return h.life>0});
+}
+function drawHits(){
+  if(!window.hits)return;
+  window.hits.forEach(h=>{
+    x.save();x.globalAlpha=h.life;
+    x.fillStyle=h.whacked?'#f0f':'#0ff';
+    x.shadowColor=x.fillStyle;x.shadowBlur=10;
+    x.beginPath();x.arc(h.x,h.y,4,0,Math.PI*2);x.fill();
+    x.restore();
+  });
+}
+function update(dt){
+  if(gameover)return;
+  time-=dt;
+  if(time<=0){time=0;endGame();return;}
+  document.getElementById('t').textContent=Math.ceil(time);
+  const active=moles.filter(m=>m.up);
+  if(active.length===0){
+    moleUp(Math.floor(Math.random()*9));
+  } else {
+    active.forEach(m=>{
+      m.t+=dt*1000;
+      if(m.t>=m.upTime){m.up=false;m.h++;combo=1;document.getElementById('co').textContent='x1';}
+    });
+  }
+  baseUpTime=Math.max(minUpTime,baseUpTime*0.9995);
+  updateHits(dt);
+}
+function draw(){
+  x.fillStyle='#0a0a0f';x.fillRect(0,0,W,H);
+  x.strokeStyle='#1a1a2e';x.lineWidth=2;
+  for(let i=0;i<=3;i++){x.beginPath();x.moveTo(W/4*i,0);x.lineTo(W/4*i,H);x.stroke();x.beginPath();x.moveTo(0,H/4*i);x.lineTo(W,H/4*i);x.stroke();}
+  holes.forEach((h,i)=>{
+    const m=moles[i];
+    x.save();
+    x.fillStyle='#1a0a2e';x.shadowColor='#f0f';x.shadowBlur=m.up?20:5;
+    x.beginPath();x.arc(h.x,h.y,h.r,0,Math.PI*2);x.fill();
+    if(m.up){
+      const b=m.whacked?0.3:1,cl=m.whacked?'#444':`hsl(${330+m.h*20},100%,${70-b*30}%)`;
+      x.fillStyle=cl;x.shadowColor='#f0f';x.shadowBlur=30;
+      const ry=h.r*0.8, rx=h.r*0.6;
+      x.beginPath();x.ellipse(h.x,h.y-h.r*0.4,rx,ry,0,0,Math.PI*2);x.fill();
+      x.fillStyle='#111';x.shadowBlur=0;
+      x.beginPath();x.arc(h.x-h.r*0.2,h.y-h.r*0.5,h.r*0.12,0,Math.PI*2);x.fill();
+      x.beginPath();x.arc(h.x+h.r*0.2,h.y-h.r*0.5,h.r*0.12,0,Math.PI*2);x.fill();
+      x.fillStyle='#f0f';x.beginPath();x.arc(h.x,h.y-h.r*0.2,h.r*0.15,0,Math.PI*2);x.fill();
+    }
+    x.restore();
+  });
+  drawHits();
+  x.strokeStyle='#0ff';x.lineWidth=3;x.shadowColor='#0ff';x.shadowBlur=10;
+  x.strokeRect(2,2,W-4,H-4);x.shadowBlur=0;
+}
+function endGame(){gameover=true;document.getElementById('over').style.display='block';document.getElementById('fs').textContent=score;}
+function restart(){score=0;combo=1;time=60;gameover=false;baseUpTime=1200;window.hits=[];document.getElementById('s').textContent='0';document.getElementById('co').textContent='x1';document.getElementById('t').textContent='60';document.getElementById('over').style.display='none';moles.forEach(m=>{m.up=false;m.whacked=false;m.t=0;m.h=0;});}
+function loop(ts){const dt=Math.min((ts-lastTime)/1000,0.1);lastTime=ts;update(dt);draw();requestAnimationFrame(loop);}
+c.addEventListener('mousedown',e=>{const r=c.getBoundingClientRect();mouse.x=(e.clientX-r.left)*W/c.width;mouse.y=(e.clientY-r.top)*H/c.height;holes.forEach((h,i)=>{const dx=mouse.x-h.x,dy=mouse.y-h.y;if(dx*dx+dy*dy<h.r*h.r)whack(i);});});
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();mouse.x=(e.clientX-r.left)*W/c.width;mouse.y=(e.clientY-r.top)*H/c.height;});
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k in keyMap&&!keys[k]){keys[k]=true;whack(keyMap[k]);}});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+window.addEventListener('resize',resize);
+resize();requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
+</script>
+</body>
+</html>

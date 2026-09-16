@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>NEON BREAKOUT</title><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace}canvas{border:2px solid #0ff;box-shadow:0 0 20px #0ff,0 0 40px #0ff3}</style></head><body><canvas id="c"></canvas><script>const c=document.getElementById('c'),x=c.getContext('2d');c.width=800;c.height=600;const W=800,H=600,COLS=12,ROWS=8,BW=60,BH=20,PW=100,PH=14,BR=7;let state='idle',score=0,lives=3,level=1,ballSpeed=5;
+const paddle={x:W/2-PW/2,y:H-40,w:PW,h:PH};
+const ball={x:W/2,y:H-60,dx:0,dy:0,r:BR,active:false};
+const keys={};
+let bricks=[];
+const ROW_COLORS=['#ff0055','#ff3300','#ff6600','#ffaa00','#00ffcc','#00ccff','#aa66ff','#ff66ff'];
+function initBricks(){bricks=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)bricks.push({x:15+c*(BW+8),y:50+r*(BH+6),w:BW,h:BH,alive:true,color:ROW_COLORS[r],hits:r<2?2:1})}
+function resetBall(){ball.x=paddle.x+PW/2;ball.y=paddle.y-BR-2;ball.dx=0;ball.dy=0;ball.active=false}
+function launch(){if(!ball.active){const a=-Math.PI/2+(Math.random()-0.5)*0.6;ball.dx=Math.cos(a)*ballSpeed;ball.dy=Math.sin(a)*ballSpeed;ball.active=true;state='play'}}
+function movePaddle(){const sp=8;if(keys.ArrowLeft||keys.a)paddle.x=Math.max(0,paddle.x-sp);if(keys.ArrowRight||keys.d)paddle.x=Math.min(W-PW,paddle.x+sp)}
+function update(){if(state!=='play')return;movePaddle();ball.x+=ball.dx;ball.dy+=0.003;if(ball.x-ball.r<0){ball.x=ball.r;ball.dx=Math.abs(ball.dx)}if(ball.x+ball.r>W){ball.x=W-ball.r;ball.dx=-Math.abs(ball.dx)}if(ball.y-ball.r<0){ball.y=ball.r;ball.dy=Math.abs(ball.dy)}
+if(ball.y+ball.r>H){lives--;if(lives<=0){state='over';resetBall();return}resetBall();return}
+const p=paddle;if(ball.dy>0&&ball.y+ball.r>=p.y&&ball.y+ball.r<=p.y+p.h&&ball.x>=p.x&&ball.x<=p.x+p.w){const hit=(ball.x-p.x)/p.w;const ang=-Math.PI*0.15-Math.PI*0.7*(1-hit);const sp=Math.sqrt(ball.dx*ball.dx+ball.dy*ball.dy);ball.dx=Math.cos(ang)*sp;ball.dy=Math.sin(ang)*sp;ball.y=p.y-ball.r}
+for(const b of bricks){if(!b.alive)continue;if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){ball.dy=-ball.dy;b.hits--;if(b.hits<=0){b.alive=false;score+=10*level;const broken=bricks.filter(br=>!br.alive).length;if(broken%15===0)ballSpeed+=0.3}break}}
+if(bricks.every(b=>!b.alive)){level++;ballSpeed=5+level*0.5;initBricks();resetBall()}}
+function drawBG(){x.fillStyle='#0a0a1a';x.fillRect(0,0,W,H);x.strokeStyle='#0ff1';for(let i=0;i<H;i+=30){x.beginPath();x.moveTo(0,i);x.lineTo(W,i);x.stroke()}}
+function drawPaddle(){x.shadowColor='#0ff';x.shadowBlur=15;x.fillStyle='#0ff';x.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);x.shadowBlur=0}
+function drawBall(){x.shadowColor='#fff';x.shadowBlur=12;x.fillStyle='#fff';x.beginPath();x.arc(ball.x,ball.y,ball.r,0,Math.PI*2);x.fill();x.shadowBlur=0}
+function drawBricks(){for(const b of bricks){if(!b.alive)continue;x.shadowColor=b.color;x.shadowBlur=8;x.fillStyle=b.color;x.fillRect(b.x,b.y,b.w,b.h);if(b.hits>1){x.fillStyle='#0a0a1a';x.font='bold 12px Courier New';x.textAlign='center';x.fillText('2',b.x+b.w/2,b.y+b.h/2+4)}x.shadowBlur=0}}
+function drawHUD(){x.fillStyle='#0ff';x.font='18px Courier New';x.textAlign='left';x.fillText('SCORE: '+score,20,30);x.textAlign='right';x.fillText('LIVES: '+lives,W-20,30);x.textAlign='center';x.fillText('LEVEL: '+level,W/2,30)}
+function drawOverlay(msg,sub){x.fillStyle='#0a0a1acc';x.fillRect(0,0,W,H);x.shadowColor='#0ff';x.shadowBlur=20;x.fillStyle='#0ff';x.font='bold 48px Courier New';x.textAlign='center';x.fillText(msg,W/2,H/2-20);x.shadowBlur=0;x.fillStyle='#fff';x.font='20px Courier New';x.fillText(sub,W/2,H/2+30)}
+function draw(){drawBG();drawBricks();drawPaddle();drawBall();drawHUD();if(state==='idle')drawOverlay('NEON BREAKOUT','Press SPACE or any arrow to start');if(state==='over')drawOverlay('GAME OVER','Press SPACE to restart — Score: '+score)}
+function loop(){update();draw();requestAnimationFrame(loop)}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state==='idle'){launch();return}if(state==='over'){if(e.key===' '){score=0;lives=3;level=1;ballSpeed=5;initBricks();resetBall();state='idle'}}if(!ball.active)launch()});
+document.addEventListener('keyup',e=>{keys[e.key]=false});
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();paddle.x=Math.max(0,Math.min(W-PW,(e.clientX-r.left)*(W/r.width)-PW/2))});
+c.addEventListener('click',()=>{if(state==='idle')launch();if(!ball.active&&state==='play')launch()});
+initBricks();resetBall();loop();</script></body></html>

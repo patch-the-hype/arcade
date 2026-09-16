@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON RUNNER</title>
+<style>
+  html,body{margin:0;height:100%;background:#0a0a12;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  canvas{box-shadow:0 0 40px #0ff3,0 0 80px #f0f2;border:2px solid #0ff;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="300"></canvas>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=800,H=300,GY=250;
+let dino,obs,speed,score,best=0,over,started,frame;
+const KEY={Space:32,ArrowUp:38,ArrowDown:40};
+best=+(localStorage.getItem('neonBest')||0);
+
+function reset(){
+  dino={y:GY-40,vy:0,duck:false,w:40,h:40};
+  obs=[];speed=6;score=0;over=false;started=false;frame=0;
+}
+reset();
+
+function jump(){
+  if(over){reset();return}
+  if(!started)started=true;
+  if(dino.y>=GY-40)dino.vy=-13;
+}
+addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump()}
+  if(e.code==='ArrowDown'){e.preventDefault();if(!over){started=true;dino.duck=true}}
+  if(over&&(e.code==='Enter'||e.code==='KeyR'))reset();
+});
+addEventListener('keyup',e=>{if(e.code==='ArrowDown')dino.duck=false});
+
+function spawn(){
+  if(frame%Math.max(40,90-speed*4)===0){
+    const fly=Math.random()<0.25&&speed>8;
+    obs.push({x:W+20,w:20+Math.random()*25,h:fly?25:30+Math.random()*25,y:fly?GY-70:GY-(fly?25:30+Math.random()*25)});
+  }
+}
+
+function update(){
+  frame++;
+  if(!started||over)return;
+  speed+=0.0015;
+  score+=0.1;
+  dino.vy+=0.6;
+  dino.y+=dino.vy;
+  if(dino.y>GY-40){dino.y=GY-40;dino.vy=0}
+  spawn();
+  for(let o of obs)o.x-=speed;
+  obs=obs.filter(o=>o.x+o.w>0);
+  const dh=dino.duck?25:40;
+  for(const o of obs){
+    if(20<o.x+o.w&&20+dino.w>o.x&&dino.y+40-dh<o.y+o.h&&dino.y+40>o.y){
+      over=true;
+      if(score>best){best=Math.floor(score);localStorage.setItem('neonBest',best)}
+    }
+  }
+}
+
+function glowRect(x,y,w,h,c){
+  ctx.shadowColor=c;ctx.shadowBlur=15;
+  ctx.fillStyle=c;ctx.fillRect(x,y,w,h);
+  ctx.shadowBlur=0;
+}
+
+function draw(){
+  ctx.fillStyle='#0a0a12';ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='#ffffff22';
+  for(let i=0;i<30;i++)ctx.fillRect((i*137+frame*0.3)%W,(i*61)%180,2,2);
+  // ground
+  ctx.strokeStyle='#0ff';ctx.shadowColor='#0ff';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.moveTo(0,GY+1);ctx.lineTo(W,GY+1);ctx.stroke();
+  ctx.shadowBlur=0;
+  // ground dashes
+  ctx.fillStyle='#0ff6';
+  for(let i=0;i<12;i++)ctx.fillRect((i*80-frame*speed)%W,GY+8,30,2);
+  // dino
+  const dh=dino.duck?25:40;
+  glowRect(20,dino.y+40-dh,dino.w,dh,'#0f0');
+  // eye
+  ctx.fillStyle='#0a0a12';ctx.fillRect(48,dino.y+40-dh+6,5,5);
+  // obstacles
+  for(const o of obs)glowRect(o.x,o.y,o.w,o.h,'#f0f');
+  // score
+  ctx.shadowColor='#ff0';ctx.shadowBlur=8;
+  ctx.fillStyle='#ff0';ctx.font='bold 20px monospace';
+  ctx.textAlign='right';
+  ctx.fillText('SCORE '+String(Math.floor(score)).padStart(5,'0'),W-20,30);
+  ctx.fillStyle='#0ff';
+  ctx.fillText('BEST '+String(best).padStart(5,'0'),W-20,55);
+  ctx.shadowBlur=0;
+  if(!started){
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 24px monospace';
+    ctx.shadowColor='#0ff';ctx.shadowBlur=15;
+    ctx.fillText('PRESS SPACE / UP TO RUN',W/2,H/2-20);
+    ctx.shadowBlur=0;
+  }
+  if(over){
+    ctx.fillStyle='#f0f';ctx.textAlign='center';ctx.font='bold 36px monospace';
+    ctx.shadowColor='#f0f';ctx.shadowBlur=20;
+    ctx.fillText('GAME OVER',W/2,H/2-10);
+    ctx.font='bold 16px monospace';ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=8;
+    ctx.fillText('SPACE / UP / R TO RESTART',W/2,H/2+25);
+    ctx.shadowBlur=0;
+  }
+}
+
+function loop(){update();draw();requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>

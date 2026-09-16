@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Flap</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+  body { display: grid; place-items: center; background: #07051a; font-family: "Courier New", monospace; }
+  canvas { width: min(100vw, 56.25vh); height: min(100vh, 177.78vw); max-width: 480px; max-height: 854px; border: 2px solid #ff3bd4; box-shadow: 0 0 24px #ff22c866, inset 0 0 30px #16134c; background: #0b0930; touch-action: manipulation; }
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Neon Flap game"></canvas>
+<script>
+(() => {
+  const c = document.querySelector("canvas"), x = c.getContext("2d");
+  const W = 480, H = 854, ground = 790, bestKey = "neon-flap-best";
+  let bird, pipes, score, best = +(localStorage.getItem(bestKey) || 0), state = "ready", last = 0, spawn = 0;
+  c.width = W; c.height = H;
+  const reset = () => { bird = { x: 126, y: 400, vy: 0, r: 18, rot: 0 }; pipes = []; score = 0; spawn = 0; state = "ready"; };
+  const flap = () => {
+    if (state === "over") { reset(); state = "play"; }
+    else if (state === "ready") state = "play";
+    bird.vy = -430;
+  };
+  addEventListener("keydown", e => { if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); } });
+  c.addEventListener("pointerdown", flap);
+  const pipe = () => { const gap = 190, top = 125 + Math.random() * 300; pipes.push({ x: W + 30, top, bottom: top + gap, passed: false }); };
+  const hit = p => bird.x + bird.r > p.x && bird.x - bird.r < p.x + 74 && (bird.y - bird.r < p.top || bird.y + bird.r > p.bottom);
+  const update = dt => {
+    if (state !== "play") return;
+    bird.vy += 1180 * dt; bird.y += bird.vy * dt; bird.rot = Math.min(1.25, bird.vy / 650);
+    spawn -= dt; if (spawn <= 0) { pipe(); spawn = 1.55; }
+    pipes.forEach(p => { p.x -= 205 * dt; if (!p.passed && p.x + 74 < bird.x) { p.passed = true; score++; best = Math.max(best, score); localStorage.setItem(bestKey, best); } });
+    pipes = pipes.filter(p => p.x > -90);
+    if (bird.y - bird.r < 0 || bird.y + bird.r > ground || pipes.some(hit)) state = "over";
+  };
+  const neon = (color, blur = 0) => { x.strokeStyle = color; x.shadowColor = color; x.shadowBlur = blur; };
+  const draw = () => {
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#100a3e"); g.addColorStop(1, "#280b42"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.globalAlpha = .22; x.strokeStyle = "#42e8ff"; x.lineWidth = 1;
+    for (let y = 60; y < ground; y += 42) { x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke(); }
+    for (let i = -1; i < 13; i++) { x.beginPath(); x.moveTo(240, ground); x.lineTo(i * 90, 560); x.stroke(); } x.globalAlpha = 1;
+    pipes.forEach(p => { x.fillStyle = "#0dcf89"; x.shadowColor = "#18ffc0"; x.shadowBlur = 16; x.fillRect(p.x, 0, 74, p.top); x.fillRect(p.x, p.bottom, 74, ground - p.bottom); x.shadowBlur = 0; x.fillStyle = "#77ffe2"; x.fillRect(p.x - 7, p.top - 22, 88, 22); x.fillRect(p.x - 7, p.bottom, 88, 22); x.fillStyle = "#087a70"; x.fillRect(p.x + 10, 0, 9, p.top - 22); x.fillRect(p.x + 10, p.bottom + 22, 9, ground - p.bottom); });
+    x.fillStyle = "#f334d1"; x.fillRect(0, ground, W, H - ground); x.fillStyle = "#7b2d91"; for (let i = 0; i < W; i += 32) x.fillRect(i, ground + 18, 16, 5);
+    x.save(); x.translate(bird.x, bird.y); x.rotate(bird.rot); neon("#fff04a", 18); x.fillStyle = "#fff04a"; x.beginPath(); x.arc(0, 0, bird.r, 0, Math.PI * 2); x.fill(); x.fillStyle = "#ff5cdb"; x.beginPath(); x.ellipse(-4, 7, 13, 7, -.4, 0, Math.PI * 2); x.fill(); x.fillStyle = "#fff"; x.beginPath(); x.arc(8, -7, 7, 0, Math.PI * 2); x.fill(); x.fillStyle = "#170b40"; x.beginPath(); x.arc(10, -7, 3, 0, Math.PI * 2); x.fill(); x.fillStyle = "#ff853b"; x.beginPath(); x.moveTo(16, -1); x.lineTo(33, 4); x.lineTo(16, 8); x.closePath(); x.fill(); x.restore();
+    x.textAlign = "center"; x.font = "bold 52px Courier New"; neon("#fff", 10); x.fillStyle = "#fff"; x.fillText(score, W / 2, 82); x.font = "bold 18px Courier New"; x.fillStyle = "#75f7ff"; x.fillText(`BEST ${best}`, W / 2, 112);
+    if (state !== "play") { x.fillStyle = "#07051acc"; x.fillRect(35, 285, W - 70, 205); x.strokeStyle = "#ff3bd4"; x.lineWidth = 3; x.shadowColor = "#ff3bd4"; x.shadowBlur = 20; x.strokeRect(35, 285, W - 70, 205); x.shadowBlur = 0; x.fillStyle = "#fff"; x.font = "bold 38px Courier New"; x.fillText(state === "ready" ? "NEON FLAP" : "GAME OVER", W / 2, 355); x.font = "bold 18px Courier New"; x.fillStyle = "#75f7ff"; x.fillText(state === "ready" ? "SPACE / ↑ TO FLAP" : `SCORE ${score}  •  BEST ${best}`, W / 2, 402); x.fillStyle = "#ffef62"; x.fillText(state === "ready" ? "DODGE THE GAPS" : "PRESS A KEY TO RETRY", W / 2, 440); }
+  };
+  const loop = t => { const dt = Math.min(.032, (t - last) / 1000 || 0); last = t; update(dt); draw(); requestAnimationFrame(loop); };
+  reset(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON MEMORY</title>
+<style>
+  html,body{margin:0;height:100%;background:#05010d;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  canvas{border-radius:10px;box-shadow:0 0 30px rgba(0,255,255,.25),0 0 70px rgba(255,0,255,.2)}
+</style>
+</head>
+<body>
+<canvas id="c" width="500" height="610"></canvas>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const N=4,CS=110,GAP=14,BOARD=N*CS+(N-1)*GAP,PAD=(cv.width-BOARD)/2,TOP=120;
+const SYMS=['\u2666','\u2665','\u2605','\u26A1','\u263E','\u273F','\u232C','\u2622'];
+const NEON=['#0ff','#f0f','#ff0','#0f0','#f80','#f4f','#4ff','#fa0'];
+const FONT="'Courier New',monospace";
+
+let cards,state,score,moves,streak,checkT,cursor,flipCount;
+
+function deal(){
+  const deck=[];
+  for(let i=0;i<8;i++){deck.push(i);deck.push(i);}
+  for(let i=deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[deck[i],deck[j]]=[deck[j],deck[i]];}
+  cards=deck.map(i=>({sym:i,flip:0,dir:0,matched:false}));
+  score=0;moves=0;streak=0;checkT=0;cursor=0;flipCount=0;state='play';
+}
+deal();
+
+function cardAt(i){return cards[i];}
+function cellRect(i){
+  const r=i/N|0,c=i%N;
+  return {x:PAD+c*(CS+GAP),y:TOP+r*(CS+GAP)};
+}
+function glow(color,blur){ctx.shadowColor=color;ctx.shadowBlur=blur;}
+
+function drawCard(cd,i){
+  const{x,y}=cellRect(i),cx=x+CS/2,cy=y+CS/2;
+  const s=Math.abs(Math.cos(Math.PI*cd.flip));
+  ctx.save();
+  ctx.translate(cx,cy);ctx.scale(Math.max(s,.02),1);
+  const w=CS-8,h=CS-8;
+  if(cd.flip<.5){
+    ctx.fillStyle='#0a0620';ctx.fillRect(-w/2,-h/2,w,h);
+    glow('#0ff',18);ctx.strokeStyle='#0ff';ctx.lineWidth=2;
+    ctx.strokeRect(-w/2,-h/2,w,h);
+    glow('#f0f',10);ctx.fillStyle='#f0f';
+    ctx.font='34px '+FONT;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('\u25C7',0,2);
+    ctx.strokeStyle='rgba(0,255,255,.35)';ctx.lineWidth=1;ctx.shadowBlur=0;
+    ctx.strokeRect(-w/2+9,-h/2+9,w-18,h-18);
+  }else{
+    const col=NEON[cd.sym],dim=cd.matched?.45:1;
+    ctx.fillStyle='#0a0620';ctx.fillRect(-w/2,-h/2,w,h);
+    glow(col,cd.matched?8:22);
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=dim;
+    ctx.strokeRect(-w/2,-h/2,w,h);
+    ctx.fillStyle=col;ctx.font='52px '+FONT;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(SYMS[cd.sym],0,4);
+    if(cd.matched){ctx.globalAlpha=.8;ctx.font='20px '+FONT;ctx.fillText('\u2713',w/2-18,-h/2+18);}
+  }
+  ctx.restore();
+}
+
+function drawCursor(){
+  if(state==='won')return;
+  const{x,y}=cellRect(cursor);
+  glow('#ff0',14);ctx.strokeStyle='#ff0';ctx.lineWidth=3;
+  ctx.strokeRect(x+2,y+2,CS-4,CS-4);
+}
+
+function drawHUD(){
+  glow('#0ff',16);ctx.fillStyle='#0ff';
+  ctx.font='34px '+FONT;ctx.textAlign='center';
+  ctx.fillText('\u2554 NEON MEMORY \u2557',cv.width/2,52);
+  ctx.shadowBlur=0;ctx.font='18px '+FONT;
+  ctx.textAlign='left';ctx.fillStyle='#f0f';
+  ctx.fillText('SCORE '+String(score).padStart(4,'0'),PAD,90);
+  ctx.textAlign='right';ctx.fillStyle='#0f0';
+  ctx.fillText('MOVES '+String(moves).padStart(3,'0'),cv.width-PAD,90);
+  ctx.textAlign='center';ctx.fillStyle='#ff0';
+  ctx.fillText('STREAK x'+streak,cv.width/2,90);
+}
+
+function drawWin(){
+  ctx.fillStyle='rgba(3,0,15,.86)';ctx.fillRect(0,0,cv.width,cv.height);
+  glow('#f0f',30);ctx.fillStyle='#f0f';
+  ctx.font='56px '+FONT;ctx.textAlign='center';
+  ctx.fillText('YOU WIN!',cv.width/2,240);
+  glow('#0ff',14);ctx.fillStyle='#0ff';ctx.font='24px '+FONT;
+  ctx.fillText('SCORE: '+score,cv.width/2,310);
+  ctx.fillText('MOVES: '+moves,cv.width/2,345);
+  const blink=Math.sin(Date.now()/300)>-.4;
+  if(blink){
+    glow('#ff0',18);ctx.fillStyle='#ff0';ctx.font='26px '+FONT;
+    ctx.fillText('[ R ]  RESTART',cv.width/2,430);
+  }
+  ctx.shadowBlur=0;ctx.strokeStyle='#0ff';ctx.lineWidth=2;
+  ctx.strokeRect(cv.width/2-110,400,220,55);
+}
+
+function draw(){
+  ctx.fillStyle='#05010d';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(0,255,255,.03)';
+  for(let y=0;y<cv.height;y+=4)ctx.fillRect(0,y,cv.width,2);
+  drawHUD();
+  cards.forEach(drawCard);
+  drawCursor();
+  if(state==='won')drawWin();
+}
+
+function flip(i){
+  const cd=cardAt(i);
+  if(state!=='play'||cd.matched||cd.dir>0||cd.flip===1)return;
+  cd.dir=1;flipCount++;
+  if(flipCount===2){state='check';checkT=0;}
+}
+
+function update(dt){
+  cards.forEach(cd=>{
+    if(cd.dir!==0){
+      cd.flip+=cd.dir*dt*4;
+      if(cd.flip>=1){cd.flip=1;cd.dir=0;}
+      if(cd.flip<=0){cd.flip=0;cd.dir=0;}
+    }
+  });
+  if(state==='check'){
+    checkT+=dt;
+    if(checkT>.65){
+      const up=cards.filter(c=>c.flip===1&&!c.matched);
+      moves++;
+      if(up[0].sym===up[1].sym){
+        up.forEach(c=>c.matched=true);
+        streak++;score+=100+(streak-1)*25;
+        state=cards.every(c=>c.matched)?'won':'play';
+      }else{
+        up.forEach(c=>c.dir=-1);
+        streak=0;state='back';
+      }
+      flipCount=0;
+    }
+  }else if(state==='back'){
+    if(cards.every(c=>c.dir===0&&c.flip!==1||c.matched))state='play';
+  }
+}
+
+function restart(){deal();}
+
+addEventListener('keydown',e=>{
+  const r=cursor/N|0,c=cursor%N;
+  if(e.key==='r'||e.key==='R'){restart();return;}
+  if(state==='won')return;
+  if(e.key==='ArrowUp')cursor=((r-1+N)%N)*N+c;
+  else if(e.key==='ArrowDown')cursor=((r+1)%N)*N+c;
+  else if(e.key==='ArrowLeft')cursor=r*N+(c-1+N)%N;
+  else if(e.key==='ArrowRight')cursor=r*N+(c+1)%N;
+  else if(e.key===' '||e.key==='Enter')flip(cursor);
+  else return;
+  e.preventDefault();
+});
+
+function posToCell(e){
+  const b=cv.getBoundingClientRect();
+  const x=(e.clientX-b.left)*cv.width/b.width,y=(e.clientY-b.top)*cv.height/b.height;
+  for(let i=0;i<N*N;i++){
+    const p=cellRect(i);
+    if(x>=p.x&&x<=p.x+CS&&y>=p.y&&y<=p.y+CS)return i;
+  }
+  return -1;
+}
+cv.addEventListener('mousemove',e=>{
+  const i=posToCell(e);
+  if(i>=0)cursor=i;
+});
+cv.addEventListener('click',e=>{
+  if(state==='won'){restart();return;}
+  const i=posToCell(e);
+  if(i>=0){cursor=i;flip(i);}
+});
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,.05);last=now;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

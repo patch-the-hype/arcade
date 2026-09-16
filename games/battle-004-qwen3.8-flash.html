@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NEON RUN</title>
+<style>
+  html,body{margin:0;height:100%;background:#05010d;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  canvas{border:2px solid #0ff;box-shadow:0 0 24px #0ff,0 0 60px #f0f inset;background:#05010d}
+</style>
+</head>
+<body>
+<canvas id="c" width="900" height="300"></canvas>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height, GROUND = H - 40, GRAV = 2400, JUMP = -950;
+let state, dino, obs, speed, dist, score, best = +localStorage.getItem('neonrun_best') || 0;
+let spawnT, t = 0, last = 0, keys = {};
+
+function reset() {
+  state = 'run';
+  dino = { x: 70, y: GROUND, vy: 0, duck: false, frame: 0 };
+  obs = []; speed = 340; dist = 0; score = 0; spawnT = 0.8;
+}
+
+function spawn() {
+  const r = Math.random();
+  if (r < 0.5) obs.push({ x: W + 20, w: 22 + Math.random() * 16, h: 34 + Math.random() * 30, type: 'cactus' });
+  else if (r < 0.8) obs.push({ x: W + 20, w: 30, h: 18, y: GROUND - 60 - Math.random() * 40, type: 'bird' });
+  else obs.push({ x: W + 20, w: 46, h: 52, type: 'cactus' }, { x: W + 80, w: 24, h: 38, type: 'cactus' });
+}
+
+function box(o) {
+  if (o.type === 'cactus') return { x: o.x, y: GROUND - o.h, w: o.w, h: o.h };
+  return { x: o.x, y: o.y, w: o.w, h: o.h };
+}
+
+function update(dt) {
+  t += dt;
+  if (state !== 'run') return;
+  speed = Math.min(900, speed + dt * 12);
+  dist += speed * dt;
+  score = Math.floor(dist / 10);
+  if (score > best) { best = score; localStorage.setItem('neonrun_best', best); }
+
+  dino.duck = keys['ArrowDown'] && dino.y >= GROUND;
+  dino.vy += GRAV * (dino.duck ? 2.2 : 1) * dt;
+  dino.y += dino.vy * dt;
+  if (dino.y >= GROUND) { dino.y = GROUND; dino.vy = 0; }
+  if ((keys[' '] || keys['ArrowUp']) && dino.y >= GROUND) { dino.vy = JUMP; }
+  dino.frame += dt * speed * 0.05;
+
+  spawnT -= dt;
+  if (spawnT <= 0) { spawn(); spawnT = Math.max(0.45, (0.6 + Math.random() * 0.9) * 400 / speed); }
+
+  for (const o of obs) o.x -= speed * dt;
+  obs = obs.filter(o => o.x + o.w > -10);
+
+  const db = dinoBox();
+  for (const o of obs) {
+    const b = box(o);
+    if (db.x < b.x + b.w && db.x + db.w > b.x && db.y < b.y + b.h && db.y + db.h > b.y) {
+      state = 'over';
+      if (navigator.vibrate) navigator.vibrate(80);
+    }
+  }
+}
+
+function dinoBox() {
+  return dino.duck
+    ? { x: dino.x - 20, y: dino.y - 22, w: 52, h: 22 }
+    : { x: dino.x - 14, y: dino.y - 46, w: 30, h: 46 };
+}
+
+function neon(color, blur) { ctx.shadowColor = color; ctx.shadowBlur = blur; ctx.strokeStyle = color; ctx.fillStyle = color; }
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  // grid floor
+  neon('#f0f', 8); ctx.globalAlpha = 0.35; ctx.lineWidth = 1;
+  const off = dist % 60;
+  for (let i = 0; i < 16; i++) {
+    const y = GROUND + 8 + i * i * 0.9;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  for (let x = -off; x < W + 60; x += 60) {
+    ctx.beginPath(); ctx.moveTo(x, GROUND + 8); ctx.lineTo(x + (x - W / 2) * 0.6, H); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  // ground line
+  neon('#0ff', 14); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, GROUND + 4); ctx.lineTo(W, GROUND + 4); ctx.stroke();
+  // sun
+  neon('#f0f', 30); ctx.globalAlpha = 0.5;
+  ctx.beginPath(); ctx.arc(W - 130, 70, 42, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+
+  // obstacles
+  for (const o of obs) {
+    const b = box(o);
+    if (o.type === 'cactus') {
+      neon('#0f8', 12); ctx.lineWidth = 3;
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+      ctx.beginPath();
+      ctx.moveTo(b.x + b.w / 2, b.y + 8); ctx.lineTo(b.x + b.w / 2, b.y + b.h);
+      ctx.stroke();
+    } else {
+      neon('#ff0', 12); ctx.lineWidth = 2;
+      const flap = Math.sin(t * 14) * 8;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y + b.h / 2); ctx.lineTo(b.x + 12, b.y + b.h / 2 - 10 - flap); ctx.lineTo(b.x + 24, b.y + b.h / 2);
+      ctx.lineTo(b.x + 30, b.y + b.h / 2 + 4); ctx.lineTo(b.x + 14, b.y + b.h / 2 + 8); ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  // dino
+  const d = dinoBox();
+  neon('#0ff', 16); ctx.lineWidth = 2.5;
+  ctx.strokeRect(d.x, d.y, d.w, d.h);
+  if (!dino.duck) {
+    ctx.strokeRect(d.x + d.w - 14, d.y - 10, 18, 12); // head
+    ctx.fillRect(d.x + d.w - 4, d.y - 7, 3, 3); // eye
+  } else {
+    ctx.strokeRect(d.x + d.w - 6, d.y - 8, 16, 10);
+    ctx.fillRect(d.x + d.w + 6, d.y - 5, 3, 3);
+  }
+  if (dino.y >= GROUND && state === 'run') { // legs
+    const p = Math.sin(dino.frame) * 6;
+    ctx.beginPath();
+    ctx.moveTo(d.x + 8, d.y + d.h); ctx.lineTo(d.x + 8 + p, d.y + d.h + 10);
+    ctx.moveTo(d.x + d.w - 8, d.y + d.h); ctx.lineTo(d.x + d.w - 8 - p, d.y + d.h + 10);
+    ctx.stroke();
+  }
+
+  // HUD
+  neon('#0ff', 10); ctx.font = 'bold 16px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('SCORE ' + String(score).padStart(5, '0'), W - 14, 26);
+  ctx.fillStyle = '#f0f'; ctx.fillText('HI ' + String(best).padStart(5, '0'), W - 14, 48);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#0f8';
+  ctx.fillText('SPD ' + Math.round(speed), 14, 26);
+
+  if (state !== 'run') {
+    ctx.textAlign = 'center';
+    neon('#f04', 24); ctx.font = 'bold 42px monospace';
+    ctx.fillText('GAME OVER', W / 2, H / 2 - 14);
+    neon('#0ff', 12); ctx.font = 'bold 16px monospace';
+    ctx.fillText('PRESS SPACE / ↑ TO RESTART', W / 2, H / 2 + 22);
+    ctx.textAlign = 'left';
+  }
+}
+
+function loop(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000 || 0);
+  last = ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+addEventListener('keydown', e => {
+  if ([' ', 'ArrowUp', 'ArrowDown'].includes(e.key)) e.preventDefault();
+  keys[e.key] = true;
+  if (state === 'over' && (e.key === ' ' || e.key === 'ArrowUp')) reset();
+});
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+reset();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

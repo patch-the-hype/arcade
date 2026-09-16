@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>ASTEROIDS</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{display:block;background:#030308}
+</style></head><body>
+<canvas id="c"></canvas>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+let W,H,ship,asts,buls,keys={},score,lives,wave,over,inv,flash,t0;
+const TAU=Math.PI*2,R=Math.random;
+function resize(){W=C.width=innerWidth;H=C.height=innerHeight}
+addEventListener('resize',resize);resize();
+onkeydown=e=>{keys[e.code]=1;if(e.code==='Space')e.preventDefault();if(over&&(e.code==='Space'||e.code==='Enter'))reset()};
+onkeyup=e=>keys[e.code]=0;
+function wrap(o){if(o.x<0)o.x+=W;if(o.x>W)o.x-=W;if(o.y<0)o.y+=H;if(o.y>H)o.y-=H}
+function dist(a,b){let dx=a.x-b.x,dy=a.y-b.y;return Math.hypot(dx,dy)}
+function mkShip(){return{x:W/2,y:H/2,a:-Math.PI/2,vx:0,vy:0,r:12}}
+function mkAst(x,y,s){
+  const n=7+s*2,pts=[];
+  for(let i=0;i<n;i++)pts.push(.6+.6*R());
+  const sp=.4+R()*.6+(4-s)*.35;
+  const a=R()*TAU;
+  return{x:x??R()*W,y:y??R()*H,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,s,r:s*18,rot:0,vr:(R()-.5)*.03,n,pts};
+}
+function spawnWave(){
+  const n=3+wave*2;
+  for(let i=0;i<n;i++){
+    let a,d;
+    do{a=mkAst(null,null,3);d=dist(a,ship)}while(d<180);
+    asts.push(a);
+  }
+}
+function reset(){
+  score=0;lives=3;wave=1;over=0;inv=120;flash=0;
+  ship=mkShip();asts=[];buls=[];spawnWave();
+}
+function shoot(){
+  if(buls.length>8)return;
+  buls.push({x:ship.x+Math.cos(ship.a)*14,y:ship.y+Math.sin(ship.a)*14,
+    vx:Math.cos(ship.a)*8+ship.vx,vy:Math.sin(ship.a)*8+ship.vy,life:50});
+}
+function hitAst(a,i){
+  score+=a.s===3?20:a.s===2?50:100;
+  asts.splice(i,1);
+  if(a.s>1){asts.push(mkAst(a.x,a.y,a.s-1));asts.push(mkAst(a.x,a.y,a.s-1))}
+  if(!asts.length){wave++;spawnWave();inv=90}
+}
+function killShip(){
+  if(inv>0)return;
+  lives--;flash=18;inv=150;
+  ship=mkShip();
+  if(lives<=0)over=1;
+}
+let fireCd=0;
+function step(dt){
+  if(over)return;
+  if(inv>0)inv--;
+  if(flash>0)flash--;
+  if(keys.ArrowLeft)ship.a-=.07;
+  if(keys.ArrowRight)ship.a+=.07;
+  if(keys.ArrowUp){ship.vx+=Math.cos(ship.a)*.18;ship.vy+=Math.sin(ship.a)*.18}
+  ship.vx*=.99;ship.vy*=.99;
+  const sp=Math.hypot(ship.vx,ship.vy);
+  if(sp>7){ship.vx*=7/sp;ship.vy*=7/sp}
+  ship.x+=ship.vx;ship.y+=ship.vy;wrap(ship);
+  if(fireCd>0)fireCd--;
+  if(keys.Space&&fireCd===0){shoot();fireCd=10}
+  for(let i=buls.length-1;i>=0;i--){
+    const b=buls[i];b.x+=b.vx;b.y+=b.vy;wrap(b);b.life--;
+    if(b.life<=0)buls.splice(i,1);
+  }
+  for(const a of asts){a.x+=a.vx;a.y+=a.vy;a.rot+=a.vr;wrap(a)}
+  for(let i=asts.length-1;i>=0;i--){
+    const a=asts[i];
+    for(let j=buls.length-1;j>=0;j--){
+      if(dist(a,buls[j])<a.r){buls.splice(j,1);hitAst(a,i);break}
+    }
+  }
+  if(inv<=0)for(const a of asts)if(dist(a,ship)<a.r+ship.r){killShip();break}
+}
+function neon(col,w){X.strokeStyle=col;X.shadowColor=col;X.shadowBlur=12;X.lineWidth=w;X.lineJoin='round'}
+function drawAst(a){
+  const col=a.s===3?'#39f':a.s===2?'#f3f':'#3f9';
+  neon(col,1.5);X.beginPath();
+  for(let i=0;i<a.n;i++){
+    const ang=a.rot+i/a.n*TAU,rr=a.r*a.pts[i];
+    const px=a.x+Math.cos(ang)*rr,py=a.y+Math.sin(ang)*rr;
+    i?X.lineTo(px,py):X.moveTo(px,py);
+  }
+  X.closePath();X.stroke();
+}
+function drawShip(){
+  if(inv>0&&(inv&4)===0)return;
+  neon('#0ff',2);X.beginPath();
+  X.moveTo(ship.x+Math.cos(ship.a)*14,ship.y+Math.sin(ship.a)*14);
+  X.lineTo(ship.x+Math.cos(ship.a+2.4)*10,ship.y+Math.sin(ship.a+2.4)*10);
+  X.lineTo(ship.x+Math.cos(ship.a)*-4,ship.y+Math.sin(ship.a)*-4);
+  X.lineTo(ship.x+Math.cos(ship.a-2.4)*10,ship.y+Math.sin(ship.a-2.4)*10);
+  X.closePath();X.stroke();
+  if(keys.ArrowUp){
+    neon('#f80',2);X.beginPath();
+    X.moveTo(ship.x+Math.cos(ship.a+2.6)*8,ship.y+Math.sin(ship.a+2.6)*8);
+    X.lineTo(ship.x+Math.cos(ship.a)*-12-(R()*6),ship.y+Math.sin(ship.a)*-12-(R()*6));
+    X.lineTo(ship.x+Math.cos(ship.a-2.6)*8,ship.y+Math.sin(ship.a-2.6)*8);
+    X.stroke();
+  }
+}
+function hud(){
+  X.shadowBlur=8;X.fillStyle='#0ff';X.font='20px monospace';
+  X.fillText('SCORE '+score,16,28);
+  X.fillText('WAVE '+wave,16,52);
+  for(let i=0;i<lives;i++){
+    const x=W-30-i*22,y=24;
+    X.strokeStyle='#0ff';X.lineWidth=1.5;X.beginPath();
+    X.moveTo(x,y-8);X.lineTo(x-6,y+6);X.lineTo(x,y+2);X.lineTo(x+6,y+6);X.closePath();X.stroke();
+  }
+  if(over){
+    X.textAlign='center';X.fillStyle='#f3f';X.font='48px monospace';
+    X.fillText('GAME OVER',W/2,H/2-10);
+    X.fillStyle='#0ff';X.font='18px monospace';
+    X.fillText('SPACE / ENTER TO RESTART',W/2,H/2+28);
+    X.textAlign='left';
+  }
+}
+function frame(t){
+  requestAnimationFrame(frame);
+  const dt=Math.min(32,t-(t0||t));t0=t;
+  step(dt);
+  X.setTransform(1,0,0,1,0,0);
+  X.fillStyle=flash?'#201018':'#030308';
+  X.fillRect(0,0,W,H);
+  X.strokeStyle='#112';X.shadowBlur=0;X.lineWidth=1;
+  for(let i=0;i<40;i++){const sx=(i*97)%W,sy=(i*53)%H;X.fillStyle='#446';X.fillRect(sx,sy,1,1)}
+  for(const a of asts)drawAst(a);
+  neon('#ff0',2);
+  for(const b of buls){X.beginPath();X.arc(b.x,b.y,2,0,TAU);X.stroke()}
+  drawShip();hud();
+}
+reset();requestAnimationFrame(frame);
+</script></body></html>

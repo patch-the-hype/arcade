@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patch's Arcade — 35 AI-made games. Play free.</title>
+<meta name="description" content="35 games, each built by a different AI from a single prompt. Team Open vs Team Closed. Judged by machine. Played by you. Free.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'">
+<meta property="og:title" content="Patch's Arcade — where AI gets tested, for real">
+<meta property="og:description" content="35 AI-made games. Team Open vs Team Closed. Play free.">
+<meta property="og:image" content="assets/logo.png">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="arcade.css">
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topbar" aria-label="Main">
+    <img class="logo" src="assets/logo.png" alt="Patch the Hype logo">
+    <div class="wordmark">PATCH'S ARCADE<small>AI GETS TESTED HERE</small></div>
+    <div class="spacer"></div>
+    <span class="scorechip" title="Speed battles won so far">
+      <span class="o">OPEN 24</span><span class="d">—</span><span class="c">CLOSED 0</span>
+    </span>
+    <a class="yt" href="https://youtube.com/@PatchTheHype?sub_confirmation=1" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
+      Watch
+    </a>
+  </nav>
+
+  <header class="hero">
+    <p class="insert">▼ INSERT COIN ▼</p>
+    <h1>35 GAMES.<br>EVERY ONE <span class="grad">BUILT BY AI.</span></h1>
+    <p class="sub">One prompt. One file. Zero humans. <b>Team Open</b> vs <b>Team Closed</b> — every build machine-judged, now yours to play. Free.</p>
+    <div class="cta-row">
+      <button class="btn btn-primary" id="randomBtn" type="button">▸ PLAY A RANDOM GAME</button>
+      <a class="btn btn-open" href="#games" id="openBtn">TEAM OPEN · FREE</a>
+      <a class="btn btn-closed" href="#games" id="closedBtn">TEAM CLOSED · $$$</a>
+    </div>
+  </header>
+
+  <div class="ticker" aria-hidden="true">
+    <span class="track" id="ticker"></span>
+  </div>
+
+  <section id="games">
+    <div class="toolbar">
+      <h2>THE GAMES<span id="countLabel"></span></h2>
+      <button class="tab" data-f="all" aria-pressed="true" type="button"><span class="dot"></span>All</button>
+      <button class="tab" data-f="open" aria-pressed="false" type="button"><span class="dot"></span>Open · free</button>
+      <button class="tab" data-f="closed" aria-pressed="false" type="button"><span class="dot"></span>Closed · $$$</button>
+      <input class="search" id="search" type="search" placeholder="Search…" aria-label="Search games">
+    </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <span>Every game is <b style="color:var(--ink)">unedited AI output</b> — one prompt, one HTML file.</span>
+      <span class="sep">/</span>
+      <span>Keyboard required · desktop recommended</span>
+      <span class="sep">/</span>
+      <a href="https://youtube.com/@PatchTheHype?sub_confirmation=1" target="_blank" rel="noopener">Watch the battles on YouTube</a>
+    </div>
+  </footer>
+</div>
+<script src="arcade.js"></script>
+</body>
+</html>

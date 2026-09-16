@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tetris</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Courier New',monospace}
+#wrap{display:flex;gap:20px;align-items:flex-start}
+canvas{border:2px solid #0ff;box-shadow:0 0 20px #0ff,0 0 40px #0ff4}
+#side{display:flex;flex-direction:column;gap:15px;min-width:120px}
+.box{background:#0a0a2a;border:2px solid #f0f;padding:10px;box-shadow:0 0 15px #f0f4}
+.box h3{color:#0ff;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px}
+#nextCanvas{display:block;margin:0 auto}
+.val{color:#f0f;font-size:20px;font-weight:bold;text-shadow:0 0 10px #f0f}
+#msg{color:#ff0;font-size:14px;text-align:center;text-shadow:0 0 10px #ff0}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="board" width="300" height="600"></canvas>
+  <div id="side">
+    <div class="box"><h3>Score</h3><div class="val" id="score">0</div></div>
+    <div class="box"><h3>Level</h3><div class="val" id="level">1</div></div>
+    <div class="box"><h3>Lines</h3><div class="val" id="lines">0</div></div>
+    <div class="box"><h3>Next</h3><canvas id="nextCanvas" width="100" height="100"></canvas></div>
+    <div id="msg"></div>
+  </div>
+</div>
+<script>
+const COLS=10,ROWS=20,BLOCK=30;
+const canvas=document.getElementById('board');
+const ctx=canvas.getContext('2d');
+const nCanvas=document.getElementById('nextCanvas');
+const nCtx=nCanvas.getContext('2d');
+const PIECES=[
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  [[1,1,0],[0,1,1]],
+  [[0,1,1],[1,1,0]]
+];
+const COLORS=['#0ff','#ff0','#f0f','#f80','#00f','#0f0','#f00'];
+let board,current,nextPiece,score,level,lines,dropInterval,dropCounter,gameOver,lastTime,acc;
+function newPiece(){return{shape:PIECES[Math.random()*PIECES.length|0].map(r=>[...r]),color:COLORS[Math.random()*COLORS.length|0],x:0,y:0}}
+function init(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  score=0;level=1;lines=0;gameOver=false;
+  current=nextPiece||newPiece();nextPiece=newPiece();
+  current.x=Math.floor((COLS-current.shape[0].length)/2);current.y=0;
+  dropInterval=1000;dropCounter=0;lastTime=0;acc=0;
+  document.getElementById('msg').textContent='';
+  updateUI();
+}
+function collide(p,x,y){
+  for(let r=0;r<p.shape.length;r++)for(let c=0;c<p.shape[r].length;c++){
+    if(!p.shape[r][c])continue;
+    let nx=x+c,ny=y+r;
+    if(nx<0||nx>=COLS||ny>=ROWS)return true;
+    if(ny>=0&&board[ny][nx])return true;
+  }
+  return false;
+}
+function merge(){
+  for(let r=0;r<current.shape.length;r++)for(let c=0;c<current.shape[r].length;c++){
+    if(current.shape[r][c]&&current.y+r>=0)board[current.y+r][current.x+c]=current.color;
+  }
+}
+function clearLines(){
+  let cleared=0;
+  for(let r=ROWS-1;r>=0;r--){
+    if(board[r].every(c=>c)){board.splice(r,1);board.unshift(Array(COLS).fill(null));cleared++;r++;}
+  }
+  if(cleared){
+    score+=[0,100,300,500,800][cleared]*level;
+    lines+=cleared;
+    level=Math.floor(lines/10)+1;
+    dropInterval=Math.max(100,1000-(level-1)*80);
+    updateUI();
+  }
+}
+function spawn(){
+  current=nextPiece;nextPiece=newPiece();
+  current.x=Math.floor((COLS-current.shape[0].length)/2);current.y=0;
+  if(collide(current,current.x,current.y)){gameOver=true;document.getElementById('msg').textContent='GAME OVER\nPress R'}
+}
+function rotate(s){
+  let rows=s.length,cols=s[0].length;
+  let r=Array.from({length:cols},()=>Array(rows));
+  for(let i=0;i<rows;i++)for(let j=0;j<cols;j++)r[j][rows-1-i]=s[i][j];
+  return r;
+}
+function drawBlock(c,x,y,s){
+  c.fillStyle=s;c.fillRect(x,y,s,s);
+  c.strokeStyle='#fff3';c.lineWidth=1;c.strokeRect(x,y,s,s);
+  c.fillStyle='#fff3';c.fillRect(x,y,s,3);c.fillRect(x,y,3,s);
+}
+function draw(){
+  ctx.fillStyle='#0a0a1a';ctx.fillRect(0,0,300,600);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(board[r][c])drawBlock(ctx,c*BLOCK,r*BLOCK,BLOCK);
+    else{ctx.strokeStyle='#111';ctx.strokeRect(c*BLOCK,r*BLOCK,BLOCK,BLOCK);}
+  }
+  if(!gameOver){
+    let ghostY=current.y;
+    while(!collide(current,current.x,ghostY+1))ghostY++;
+    ctx.globalAlpha=0.2;
+    for(let r=0;r<current.shape.length;r++)for(let c=0;c<current.shape[r].length;c++)
+      if(current.shape[r][c])drawBlock(ctx,(current.x+c)*BLOCK,(ghostY+r)*BLOCK,BLOCK);
+    ctx.globalAlpha=1;
+    for(let r=0;r<current.shape.length;r++)for(let c=0;c<current.shape[r].length;c++)
+      if(current.shape[r][c])drawBlock(ctx,(current.x+c)*BLOCK,(current.y+r)*BLOCK,BLOCK);
+  }
+  nCtx.fillStyle='#0a0a2a';nCtx.fillRect(0,0,100,100);
+  if(nextPiece){
+    let offX=(100-nextPiece.shape[0].length*20)/2,offY=(100-nextPiece.shape.length*20)/2;
+    for(let r=0;r<nextPiece.shape.length;r++)for(let c=0;c<nextPiece.shape[r].length;c++)
+      if(nextPiece.shape[r][c])drawBlock(nCtx,offX+c*20,offY+r*20,20);
+  }
+}
+function updateUI(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('level').textContent=level;
+  document.getElementById('lines').textContent=lines;
+}
+function loop(time){
+  if(!lastTime)lastTime=time;
+  let dt=time-lastTime;lastTime=time;
+  if(!gameOver){
+    acc+=dt;
+    if(acc>=dropInterval){acc=0;drop();}
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+function drop(){
+  if(!collide(current,current.x,current.y+1)){current.y++}
+  else{merge();clearLines();spawn();}
+}
+document.addEventListener('keydown',e=>{
+  if(gameOver){if(e.key==='r'||e.key==='R')init();return}
+  if(e.key==='ArrowLeft'&&!collide(current,current.x-1,current.y))current.x--;
+  else if(e.key==='ArrowRight'&&!collide(current,current.x+1,current.y))current.x++;
+  else if(e.key==='ArrowDown'){if(!collide(current,current.x,current.y+1))current.y++;score+=1;updateUI()}
+  else if(e.key==='ArrowUp'){let r=rotate(current.shape);if(!collide({shape:r},current.x,current.y))current.shape=r}
+  else if(e.key===' '){while(!collide(current,current.x,current.y+1)){current.y++;score+=2}merge();clearLines();spawn();updateUI()}
+  e.preventDefault();
+});
+init();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

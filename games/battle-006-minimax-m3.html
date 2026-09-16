@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Space Invaders</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:monospace;color:#0ff}
+  canvas{background:#000;box-shadow:0 0 40px #0ff,0 0 80px #f0f;display:block;image-rendering:pixelated}
+</style>
+</head>
+<body>
+<canvas id="c" width="640" height="720"></canvas>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),W=c.width,H=c.height;
+let p,lives,score,aliens,bullets,ab,dir,step,cd,at,state,t0;
+const reset=()=>{
+  p={x:W/2-22,y:H-70,w:44,h:24};
+  lives=3;score=0;dir=1;step=0;cd=0;at=0;state='play';
+  aliens=[];bullets=[];ab=[];
+  for(let r=0;r<5;r++)for(let i=0;i<10;i++)
+    aliens.push({x:70+i*50,y:90+r*46,w:34,h:26,r,alive:1});
+};
+const keys={};
+addEventListener('keydown',e=>{
+  keys[e.code]=1;
+  if(e.code==='Space'){e.preventDefault();shoot();}
+  if((state==='win'||state==='lose')&&e.code==='Enter')reset();
+});
+addEventListener('keyup',e=>keys[e.code]=0);
+const shoot=()=>{if(bullets.length<3&&state==='play')bullets.push({x:p.x+p.w/2-2,y:p.y-12,w:4,h:12});};
+function tick(t){
+  const dt=Math.min(0.05,(t-t0)/1000);t0=t;
+  if(state==='play')update(dt);
+  draw();requestAnimationFrame(tick);
+}
+function update(dt){
+  if(keys.ArrowLeft)p.x-=320*dt;
+  if(keys.ArrowRight)p.x+=320*dt;
+  p.x=Math.max(0,Math.min(W-p.w,p.x));
+  step+=dt;
+  const live=aliens.filter(a=>a.alive);
+  const interval=Math.max(0.06,live.length*0.012);
+  if(step>interval){
+    step=0;
+    let hit=0;
+    for(const a of live)if((a.x<=6&&dir<0)||(a.x+a.w>=W-6&&dir>0))hit=1;
+    if(hit){dir*=-1;for(const a of aliens)if(a.alive)a.y+=22;}
+    else for(const a of aliens)if(a.alive)a.x+=14*dir;
+  }
+  for(const b of bullets)b.y-=520*dt;
+  for(const b of ab)b.y+=260*dt;
+  if(--cd<=0&&live.length&&Math.random()<0.6){
+    const a=live[Math.random()*live.length|0];
+    ab.push({x:a.x+a.w/2-2,y:a.y+a.h,w:4,h:12});
+    cd=Math.max(8,live.length*2);
+  }
+  bullets=bullets.filter(b=>b.y>-20);
+  ab=ab.filter(b=>b.y<H+20);
+  for(const b of bullets)for(const a of aliens){
+    if(a.alive&&b.x<a.x+a.w&&b.x+b.w>a.x&&b.y<a.y+a.h&&b.y+b.h>a.y){
+      a.alive=0;b.y=-100;score+=a.r<2?30:a.r<4?20:10;
+    }
+  }
+  for(const b of ab)if(b.x<p.x+p.w&&b.x+b.w>p.x&&b.y<p.y+p.h&&b.y+b.h>p.y){
+    b.y=H+100;if(--lives<=0)state='lose';
+  }
+  for(const a of aliens)if(a.alive&&a.y+a.h>=p.y){state='lose';break;}
+  if(!aliens.some(a=>a.alive))state='win';
+}
+function draw(){
+  x.fillStyle='#000';x.fillRect(0,0,W,H);
+  x.shadowBlur=18;
+  x.shadowColor='#0ff';x.fillStyle='#0ff';x.fillRect(p.x,p.y,p.w,p.h);
+  x.fillRect(p.x+4,p.y-8,p.w-8,8);
+  for(const a of aliens)if(a.alive){
+    x.shadowColor=a.r<2?'#f0f':a.r<4?'#0f0':'#ff0';
+    x.fillStyle=x.shadowColor;
+    const f=(performance.now()/200|0)%2;
+    x.fillRect(a.x+f,a.y,a.w,a.h);
+    x.fillRect(a.x+a.w/2-4,a.y+a.h-6,8,6);
+  }
+  x.shadowColor='#ff0';x.fillStyle='#ff0';
+  for(const b of bullets)x.fillRect(b.x,b.y,b.w,b.h);
+  x.shadowColor='#f55';x.fillStyle='#f55';
+  for(const b of ab)x.fillRect(b.x,b.y,b.w,b.h);
+  x.shadowBlur=0;
+  x.fillStyle='#fff';x.font='22px monospace';
+  x.fillText('SCORE '+score,12,30);
+  x.fillText('LIVES '+lives,W-130,30);
+  if(state!=='play'){
+    x.fillStyle=state==='win'?'#0f0':'#f55';
+    x.font='bold 56px monospace';x.textAlign='center';
+    x.fillText(state.toUpperCase(),W/2,H/2);
+    x.fillStyle='#fff';x.font='20px monospace';
+    x.fillText('Press ENTER to restart',W/2,H/2+50);
+    x.textAlign='start';
+  }
+}
+reset();t0=performance.now();requestAnimationFrame(tick);
+</script>
+</body>
+</html>
