@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://patch-the-hype.github.io/arcade/sitemap.xml

@@ -3,26 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patch's Arcade — 35 AI-made games. Play free.</title>
-<meta name="description" content="35 games, each built by a different AI from a single prompt. Team Open vs Team Closed. Judged by machine. Played by you. Free.">
+<title>Patch's Arcade: 35 games built by AI. Play free.</title>
+<meta name="description" content="35 games, each built by a different AI from a single prompt. Open-weight models vs closed labs, machine-judged. Play free, no login.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#241840">
+<link rel="canonical" href="https://patch-the-hype.github.io/arcade/">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
-<meta property="og:title" content="Patch's Arcade — where AI gets tested, for real">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Patch's Arcade">
+<meta property="og:title" content="Patch's Arcade: where AI gets tested, for real">
 <meta property="og:description" content="35 AI-made games. Team Open vs Team Closed. Play free.">
-<meta property="og:image" content="assets/logo.png">
-<link rel="icon" type="image/png" href="assets/logo.png">
+<meta property="og:url" content="https://patch-the-hype.github.io/arcade/">
+<meta property="og:image" content="https://patch-the-hype.github.io/arcade/assets/og-banner.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Patch's Arcade: 35 AI-made games. Team Open vs Team Closed.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Patch's Arcade: where AI gets tested, for real">
+<meta name="twitter:description" content="35 AI-made games. Team Open vs Team Closed. Play free.">
+<meta name="twitter:image" content="https://patch-the-hype.github.io/arcade/assets/og-banner.png">
+<link rel="icon" type="image/webp" href="assets/logo.webp">
 <link rel="stylesheet" href="arcade.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "name": "Patch's Arcade", "url": "https://patch-the-hype.github.io/arcade/", "description": "Arcade of games built entirely by AI models. Open vs closed, machine-judged.", "publisher": {"@type": "Organization", "name": "Patch the Hype", "url": "https://youtube.com/@PatchTheHype"}}</script>
 </head>
 <body>
 <div class="wrap">
 
   <nav class="topbar" aria-label="Main">
-    <img class="logo" src="assets/logo.png" alt="Patch the Hype logo">
+    <img class="logo" src="assets/logo.webp" alt="Patch the Hype logo" width="38" height="38">
     <div class="wordmark">PATCH'S ARCADE<small>AI GETS TESTED HERE</small></div>
     <div class="spacer"></div>
-    <span class="scorechip" title="Speed battles won so far">
-      <span class="o">OPEN 24</span><span class="d">—</span><span class="c">CLOSED 0</span>
-    </span>
+    <details class="stats">
+      <summary aria-label="Arcade numbers, tap for the honest breakdown">35 GAMES<span class="chip-b"> · 18 BATTLES</span> · 0 HUMANS <span class="arr">▼</span></summary>
+      <div class="stats-panel">
+        <h3>THE NUMBERS, HONESTLY</h3>
+        <table>
+          <tr><td>Games shipped by AI</td><td>35</td></tr>
+          <tr><td>Battles run</td><td>18</td></tr>
+          <tr><td>Open-vs-closed duels</td><td>9</td></tr>
+          <tr><td>Fastest build</td><td><span class="o">glm-5.3-flash</span> 29.5s</td></tr>
+          <tr><td>Team Open games</td><td><span class="o">25</span></td></tr>
+          <tr><td>Team Closed games</td><td><span class="c">10</span></td></tr>
+        </table>
+        <p>Every build was machine-verified to run (completeness check). Ranking is build speed plus your vote on each game page. Not every battle is open vs closed: some rounds pitted open models against each other. Receipts on every game page.</p>
+      </div>
+    </details>
     <a class="yt" href="https://youtube.com/@PatchTheHype?sub_confirmation=1" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
       Watch
@@ -31,37 +56,596 @@
 
   <header class="hero">
     <p class="insert">▼ INSERT COIN ▼</p>
-    <h1>35 GAMES.<br>EVERY ONE <span class="grad">BUILT BY AI.</span></h1>
-    <p class="sub">One prompt. One file. Zero humans. <b>Team Open</b> vs <b>Team Closed</b> — every build machine-judged, now yours to play. Free.</p>
+    <h1>35 GAMES.<br>EVERY ONE <span class="hi-pink">BUILT BY AI.</span></h1>
+    <p class="sub">One prompt. One file. Zero humans. Open-weight models against closed labs, timed and machine-verified. Now yours to play, free.</p>
     <div class="cta-row">
       <button class="btn btn-primary" id="randomBtn" type="button">▸ PLAY A RANDOM GAME</button>
       <a class="btn btn-open" href="#games" id="openBtn">TEAM OPEN · FREE</a>
       <a class="btn btn-closed" href="#games" id="closedBtn">TEAM CLOSED · $$$</a>
+      <a class="btn btn-ghost" href="https://youtube.com/@PatchTheHype?sub_confirmation=1" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
+        WATCH THE SHOW
+      </a>
     </div>
   </header>
 
+  <section class="how" id="how" aria-labelledby="howh">
+    <h2 id="howh" hidden>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <p class="n">STEP 01</p>
+        <h3>THE PROMPT</h3>
+        <p>Same task for every model: build a playable arcade game in one HTML file. No edits, no retries, no human rescue.</p>
+      </div>
+      <div class="step">
+        <p class="n">STEP 02</p>
+        <h3>THE BATTLE</h3>
+        <p>Two AIs enter, one file each. The clock runs. Wall-time is how long the model took, from first token to final file.</p>
+      </div>
+      <div class="step">
+        <p class="n">STEP 03</p>
+        <h3>THE JUDGE</h3>
+        <p>A machine judge verifies every build actually runs. Build speed and your vote decide who won. Receipts stay public.</p>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span> = open-weights model, free to run</span>
+      <span><span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span> = closed lab, paid API</span>
+      <span><b>wall-s</b> = build time in seconds</span>
+    </div>
+  </section>
+
   <div class="ticker" aria-hidden="true">
-    <span class="track" id="ticker"></span>
+    <span class="track"><b class="open">GLM-5.3-FLASH</b> NEON RUNNER · 29.5s ★ <b class="open">HY3</b> NEON FLAPPY · 30.0s ★ <b class="open">QWEN3.7-MAX</b> SNAKE · 35.5s ★ <b class="open">MINIMAX-M3</b> SPACE INVADERS · 36.8s ★ <b class="open">HY3</b> NEON FLAPPY · 38.8s ★ <b class="open">QWEN3.7-PLUS</b> NEON BREAKOUT · 39.1s ★ <b class="open">GLM-5.2</b> NEON RUNNER · 39.7s ★ <b class="open">QWEN3.7-PLUS</b> NEON BREAKOUT · 40.0s ★ <b class="open">GLM-5.3</b> NEON PONG · 40.5s ★ <b class="open">GLM-5.3</b> NEON PONG · 45.8s ★ <b class="open">GLM-5.3-FLASH</b> NEON RUNNER · 29.5s ★ <b class="open">HY3</b> NEON FLAPPY · 30.0s ★ <b class="open">QWEN3.7-MAX</b> SNAKE · 35.5s ★ <b class="open">MINIMAX-M3</b> SPACE INVADERS · 36.8s ★ <b class="open">HY3</b> NEON FLAPPY · 38.8s ★ <b class="open">QWEN3.7-PLUS</b> NEON BREAKOUT · 39.1s ★ <b class="open">GLM-5.2</b> NEON RUNNER · 39.7s ★ <b class="open">QWEN3.7-PLUS</b> NEON BREAKOUT · 40.0s ★ <b class="open">GLM-5.3</b> NEON PONG · 40.5s ★ <b class="open">GLM-5.3</b> NEON PONG · 45.8s ★ </span>
   </div>
 
   <section id="games">
     <div class="toolbar">
-      <h2>THE GAMES<span id="countLabel"></span></h2>
+      <h2>THE GAMES<span id="countLabel">· 35</span></h2>
       <button class="tab" data-f="all" aria-pressed="true" type="button"><span class="dot"></span>All</button>
       <button class="tab" data-f="open" aria-pressed="false" type="button"><span class="dot"></span>Open · free</button>
       <button class="tab" data-f="closed" aria-pressed="false" type="button"><span class="dot"></span>Closed · $$$</button>
-      <input class="search" id="search" type="search" placeholder="Search…" aria-label="Search games">
+      <input class="search" id="search" type="search" placeholder="Search game or model…" aria-label="Search games by name or model">
     </div>
-    <div class="grid" id="grid" aria-live="polite"></div>
+    <div class="grid" id="grid" aria-live="polite">
+      <a class="card open featured" href="play/battle-004-glm-5.3-flash.html"
+         data-team="open" data-battle="battle-004"
+         data-search="neon runner glm-5.3-flash">
+        <div class="thumb">
+          <img src="thumbs/battle-004-glm-5.3-flash.webp" alt="Screenshot of NEON RUNNER, built by glm-5.3-flash" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON RUNNER</span>
+          <span class="g-meta">glm-5.3-flash · <b>29.5s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-009-hy3.html"
+         data-team="open" data-battle="battle-009"
+         data-search="neon flappy hy3">
+        <div class="thumb">
+          <img src="thumbs/battle-009-hy3.webp" alt="Screenshot of NEON FLAPPY, built by hy3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON FLAPPY</span>
+          <span class="g-meta">hy3 · <b>30.0s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-003-qwen3.7-max.html"
+         data-team="open" data-battle="battle-003"
+         data-search="snake qwen3.7-max">
+        <div class="thumb">
+          <img src="thumbs/battle-003-qwen3.7-max.webp" alt="Screenshot of Snake, built by qwen3.7-max" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Snake</span>
+          <span class="g-meta">qwen3.7-max · <b>35.5s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-006-minimax-m3.html"
+         data-team="open" data-battle="battle-006"
+         data-search="space invaders minimax-m3">
+        <div class="thumb">
+          <img src="thumbs/battle-006-minimax-m3.webp" alt="Screenshot of Space Invaders, built by minimax-m3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Space Invaders</span>
+          <span class="g-meta">minimax-m3 · <b>36.8s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-015-hy3.html"
+         data-team="open" data-battle="battle-015"
+         data-search="neon flappy hy3">
+        <div class="thumb">
+          <img src="thumbs/battle-015-hy3.webp" alt="Screenshot of NEON FLAPPY, built by hy3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON FLAPPY</span>
+          <span class="g-meta">hy3 · <b>38.8s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-007-qwen3.7-plus.html"
+         data-team="open" data-battle="battle-007"
+         data-search="neon breakout qwen3.7-plus">
+        <div class="thumb">
+          <img src="thumbs/battle-007-qwen3.7-plus.webp" alt="Screenshot of NEON BREAKOUT, built by qwen3.7-plus" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON BREAKOUT</span>
+          <span class="g-meta">qwen3.7-plus · <b>39.1s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-011-glm-5.2.html"
+         data-team="open" data-battle="battle-011"
+         data-search="neon runner glm-5.2">
+        <div class="thumb">
+          <img src="thumbs/battle-011-glm-5.2.webp" alt="Screenshot of NEON RUNNER, built by glm-5.2" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON RUNNER</span>
+          <span class="g-meta">glm-5.2 · <b>39.7s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-013-qwen3.7-plus.html"
+         data-team="open" data-battle="battle-013"
+         data-search="neon breakout qwen3.7-plus">
+        <div class="thumb">
+          <img src="thumbs/battle-013-qwen3.7-plus.webp" alt="Screenshot of NEON BREAKOUT, built by qwen3.7-plus" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON BREAKOUT</span>
+          <span class="g-meta">qwen3.7-plus · <b>40.0s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-001-glm-5.3.html"
+         data-team="open" data-battle="battle-001"
+         data-search="neon pong glm-5.3">
+        <div class="thumb">
+          <img src="thumbs/battle-001-glm-5.3.webp" alt="Screenshot of NEON PONG, built by glm-5.3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON PONG</span>
+          <span class="g-meta">glm-5.3 · <b>40.5s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-002-glm-5.3.html"
+         data-team="open" data-battle="battle-002"
+         data-search="neon pong glm-5.3">
+        <div class="thumb">
+          <img src="thumbs/battle-002-glm-5.3.webp" alt="Screenshot of NEON PONG, built by glm-5.3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON PONG</span>
+          <span class="g-meta">glm-5.3 · <b>45.8s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-001-glm-4.7.html"
+         data-team="open" data-battle="battle-001"
+         data-search="neon pong glm-4.7">
+        <div class="thumb">
+          <img src="thumbs/battle-001-glm-4.7.webp" alt="Screenshot of NEON PONG, built by glm-4.7" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON PONG</span>
+          <span class="g-meta">glm-4.7 · <b>49.9s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-016-minimax-m2.7.html"
+         data-team="open" data-battle="battle-016"
+         data-search="whack-a-mole minimax-m2.7">
+        <div class="thumb">
+          <img src="thumbs/battle-016-minimax-m2.7.webp" alt="Screenshot of WHACK-A-MOLE, built by minimax-m2.7" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">WHACK-A-MOLE</span>
+          <span class="g-meta">minimax-m2.7 · <b>52.8s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-009-qwen3.6-plus.html"
+         data-team="open" data-battle="battle-009"
+         data-search="neon flap qwen3.6-plus">
+        <div class="thumb">
+          <img src="thumbs/battle-009-qwen3.6-plus.webp" alt="Screenshot of Neon Flap, built by qwen3.6-plus" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Flap</span>
+          <span class="g-meta">qwen3.6-plus · <b>54.0s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-002-kimi-k3.html"
+         data-team="open" data-battle="battle-002"
+         data-search="neon pong kimi-k3">
+        <div class="thumb">
+          <img src="thumbs/battle-002-kimi-k3.webp" alt="Screenshot of NEON PONG, built by kimi-k3" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON PONG</span>
+          <span class="g-meta">kimi-k3 · <b>56.7s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-014-kimi-k2.7-code.html"
+         data-team="open" data-battle="battle-014"
+         data-search="neon memory kimi-k2.7-code">
+        <div class="thumb">
+          <img src="thumbs/battle-014-kimi-k2.7-code.webp" alt="Screenshot of Neon Memory, built by kimi-k2.7-code" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Memory</span>
+          <span class="g-meta">kimi-k2.7-code · <b>59.4s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-005-longcat-2.0.html"
+         data-team="open" data-battle="battle-005"
+         data-search="tetris longcat-2.0">
+        <div class="thumb">
+          <img src="thumbs/battle-005-longcat-2.0.webp" alt="Screenshot of Tetris, built by longcat-2.0" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Tetris</span>
+          <span class="g-meta">longcat-2.0 · <b>59.7s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-010-minimax-m2.7.html"
+         data-team="open" data-battle="battle-010"
+         data-search="whack-a-mole minimax-m2.7">
+        <div class="thumb">
+          <img src="thumbs/battle-010-minimax-m2.7.webp" alt="Screenshot of WHACK-A-MOLE, built by minimax-m2.7" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">WHACK-A-MOLE</span>
+          <span class="g-meta">minimax-m2.7 · <b>60.3s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-008-kimi-k2.7-code.html"
+         data-team="open" data-battle="battle-008"
+         data-search="neon memory kimi-k2.7-code">
+        <div class="thumb">
+          <img src="thumbs/battle-008-kimi-k2.7-code.webp" alt="Screenshot of Neon Memory, built by kimi-k2.7-code" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Memory</span>
+          <span class="g-meta">kimi-k2.7-code · <b>60.7s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-017-glm-5.2.html"
+         data-team="open" data-battle="battle-017"
+         data-search="neon maze glm-5.2">
+        <div class="thumb">
+          <img src="thumbs/battle-017-glm-5.2.webp" alt="Screenshot of NEON MAZE, built by glm-5.2" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON MAZE</span>
+          <span class="g-meta">glm-5.2 · <b>61.3s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-008-glm-5.2.html"
+         data-team="open" data-battle="battle-008"
+         data-search="neon memory glm-5.2">
+        <div class="thumb">
+          <img src="thumbs/battle-008-glm-5.2.webp" alt="Screenshot of NEON MEMORY, built by glm-5.2" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON MEMORY</span>
+          <span class="g-meta">glm-5.2 · <b>70.4s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-012-longcat-2.0.html"
+         data-team="open" data-battle="battle-012"
+         data-search="tetris longcat-2.0">
+        <div class="thumb">
+          <img src="thumbs/battle-012-longcat-2.0.webp" alt="Screenshot of TETRIS, built by longcat-2.0" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">TETRIS</span>
+          <span class="g-meta">longcat-2.0 · <b>72.6s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-013-gpt-5.6-luna.html"
+         data-team="closed" data-battle="battle-013"
+         data-search="neon breakout gpt-5.6-luna">
+        <div class="thumb">
+          <img src="thumbs/battle-013-gpt-5.6-luna.webp" alt="Screenshot of Neon Breakout, built by gpt-5.6-luna" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Breakout</span>
+          <span class="g-meta">gpt-5.6-luna · <b>72.9s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-017-gpt-5.6-luna.html"
+         data-team="closed" data-battle="battle-017"
+         data-search="neon//maze gpt-5.6-luna">
+        <div class="thumb">
+          <img src="thumbs/battle-017-gpt-5.6-luna.webp" alt="Screenshot of Neon//Maze, built by gpt-5.6-luna" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon//Maze</span>
+          <span class="g-meta">gpt-5.6-luna · <b>73.3s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-004-qwen3.8-flash.html"
+         data-team="open" data-battle="battle-004"
+         data-search="neon run qwen3.8-flash">
+        <div class="thumb">
+          <img src="thumbs/battle-004-qwen3.8-flash.webp" alt="Screenshot of NEON RUN, built by qwen3.8-flash" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON RUN</span>
+          <span class="g-meta">qwen3.8-flash · <b>73.5s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-018-grok-4.6.html"
+         data-team="closed" data-battle="battle-018"
+         data-search="asteroids grok-4.6">
+        <div class="thumb">
+          <img src="thumbs/battle-018-grok-4.6.webp" alt="Screenshot of ASTEROIDS, built by grok-4.6" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          <span class="win-pill">WON BATTLE-018</span>
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">ASTEROIDS</span>
+          <span class="g-meta">grok-4.6 · <b>76.6s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-007-mimo-v2.5-pro.html"
+         data-team="open" data-battle="battle-007"
+         data-search="neon breakout mimo-v2.5-pro">
+        <div class="thumb">
+          <img src="thumbs/battle-007-mimo-v2.5-pro.webp" alt="Screenshot of NEON BREAKOUT, built by mimo-v2.5-pro" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON BREAKOUT</span>
+          <span class="g-meta">mimo-v2.5-pro · <b>79.3s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-012-grok-4.6.html"
+         data-team="closed" data-battle="battle-012"
+         data-search="tetris grok-4.6">
+        <div class="thumb">
+          <img src="thumbs/battle-012-grok-4.6.webp" alt="Screenshot of TETRIS, built by grok-4.6" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">TETRIS</span>
+          <span class="g-meta">grok-4.6 · <b>79.4s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-005-hy4-preview.html"
+         data-team="open" data-battle="battle-005"
+         data-search="neon tetris hy4-preview">
+        <div class="thumb">
+          <img src="thumbs/battle-005-hy4-preview.webp" alt="Screenshot of NEON TETRIS, built by hy4-preview" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON TETRIS</span>
+          <span class="g-meta">hy4-preview · <b>88.0s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-011-gpt-5.6-luna.html"
+         data-team="closed" data-battle="battle-011"
+         data-search="neon runner gpt-5.6-luna">
+        <div class="thumb">
+          <img src="thumbs/battle-011-gpt-5.6-luna.webp" alt="Screenshot of Neon Runner, built by gpt-5.6-luna" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Runner</span>
+          <span class="g-meta">gpt-5.6-luna · <b>92.9s</b></span>
+        </div>
+      </a>
+      <a class="card open" href="play/battle-010-mimo-v2.5.html"
+         data-team="open" data-battle="battle-010"
+         data-search="whack-a-mole — neon edition mimo-v2.5">
+        <div class="thumb">
+          <img src="thumbs/battle-010-mimo-v2.5.webp" alt="Screenshot of Whack-a-Mole — Neon Edition, built by mimo-v2.5" loading="lazy" width="640" height="400">
+          <span class="badge open"><img src="assets/flag-open.webp" alt="">OPEN</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Whack-a-Mole — Neon Edition</span>
+          <span class="g-meta">mimo-v2.5 · <b>94.6s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-014-grok-4.6.html"
+         data-team="closed" data-battle="battle-014"
+         data-search="neon memory grok-4.6">
+        <div class="thumb">
+          <img src="thumbs/battle-014-grok-4.6.webp" alt="Screenshot of NEON MEMORY, built by grok-4.6" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON MEMORY</span>
+          <span class="g-meta">grok-4.6 · <b>97.5s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-003-gpt-5.6-luna.html"
+         data-team="closed" data-battle="battle-003"
+         data-search="neon snake gpt-5.6-luna">
+        <div class="thumb">
+          <img src="thumbs/battle-003-gpt-5.6-luna.webp" alt="Screenshot of Neon Snake, built by gpt-5.6-luna" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Snake</span>
+          <span class="g-meta">gpt-5.6-luna · <b>102.6s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-015-gpt-5.6-luna.html"
+         data-team="closed" data-battle="battle-015"
+         data-search="neon flap gpt-5.6-luna">
+        <div class="thumb">
+          <img src="thumbs/battle-015-gpt-5.6-luna.webp" alt="Screenshot of Neon Flap, built by gpt-5.6-luna" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">Neon Flap</span>
+          <span class="g-meta">gpt-5.6-luna · <b>105.6s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-016-grok-4.6.html"
+         data-team="closed" data-battle="battle-016"
+         data-search="whack-a-mole grok-4.6">
+        <div class="thumb">
+          <img src="thumbs/battle-016-grok-4.6.webp" alt="Screenshot of WHACK-A-MOLE, built by grok-4.6" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">WHACK-A-MOLE</span>
+          <span class="g-meta">grok-4.6 · <b>111.2s</b></span>
+        </div>
+      </a>
+      <a class="card closed" href="play/battle-006-grok-4.6.html"
+         data-team="closed" data-battle="battle-006"
+         data-search="neon invaders grok-4.6">
+        <div class="thumb">
+          <img src="thumbs/battle-006-grok-4.6.webp" alt="Screenshot of NEON INVADERS, built by grok-4.6" loading="lazy" width="640" height="400">
+          <span class="badge closed"><img src="assets/flag-closed.webp" alt="">CLOSED</span>
+          
+          <span class="btw">⚡ BTW</span>
+          <span class="play-pill">PLAY ▸</span>
+        </div>
+        <div class="card-body">
+          <span class="g-name">NEON INVADERS</span>
+          <span class="g-meta">grok-4.6 · <b>117.2s</b></span>
+        </div>
+      </a>
+      <p class="empty" id="emptyMsg" hidden>No games match. The judge is not amused.</p>
+    </div>
   </section>
 
   <footer>
     <div class="row">
-      <span>Every game is <b class="hi">unedited AI output</b> — one prompt, one HTML file.</span>
+      <span>Every game is <b class="hi">unedited AI output</b>: one prompt, one HTML file.</span>
       <span class="sep">/</span>
-      <span>Keyboard required · desktop recommended</span>
+      <span>Keyboard, on-screen touch controls, or tap. Every game is playable.</span>
       <span class="sep">/</span>
       <a href="https://youtube.com/@PatchTheHype?sub_confirmation=1" target="_blank" rel="noopener">Watch the battles on YouTube</a>
+      <span class="sep">/</span>
+      <span>No cookies. No trackers. Receipts only.</span>
     </div>
   </footer>
 </div>
