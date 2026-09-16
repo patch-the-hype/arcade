@@ -152,6 +152,7 @@ footer .row{display:flex;gap:10px 26px;flex-wrap:wrap;align-items:center;justify
   font-size:12.5px;color:var(--muted);text-align:center}
 footer a{color:var(--ink);text-decoration:none;border-bottom:1px dotted #ffffff3a}
 footer a:hover{color:var(--pink);border-color:var(--pink)}
+footer .hi{color:var(--ink)}
 footer .sep{color:#ffffff26}
 
 /* ── play shell ────────────────────────────── */
